@@ -1,0 +1,42 @@
+{
+  "name": "@fit-tempo/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env.local src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test:auth": "npm run build && node --test test/auth.integration.mjs",
+    "test:storage": "npm run build && node --test test/storage.integration.mjs",
+    "test:limits": "npm run build && node --test test/limits.integration.mjs",
+    "lint": "eslint .",
+    "start": "node --env-file-if-exists=.env.local dist/server.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1164.0",
+    "@aws-sdk/s3-presigned-post": "3.1164.0",
+    "@aws-sdk/s3-request-presigner": "3.1164.0",
+    "@fit-tempo/contracts": "*",
+    "argon2": "0.44.0",
+    "express": "5.1.0",
+    "express-rate-limit": "8.7.4",
+    "jose": "6.1.0",
+    "pg": "8.16.3",
+    "rate-limit-redis": "6.0.2",
+    "redis": "6.3.1",
+    "sharp": "0.35.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/express": "5.0.5",
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.5",
+    "eslint": "9.39.1",
+    "globals": "16.5.0",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4"
+  }
+}

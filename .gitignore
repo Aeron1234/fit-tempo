@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+npm-debug.log*
+.phase05-pg-test/
+.phase05-pg-verify/
+.phase05-pg-final/
+

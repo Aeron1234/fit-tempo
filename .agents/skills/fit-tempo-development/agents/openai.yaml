@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fit Tempo Development"
+  short_description: "Implement and review Fit Tempo one phase at a time"
+  default_prompt: "Use $fit-tempo-development to execute the requested Fit Tempo phase, verify its checks, and update AGENTS.md and implementation status."
