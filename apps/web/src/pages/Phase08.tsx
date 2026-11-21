@@ -1,19 +1,20 @@
+import { TempoCanvas } from '@/components/shared/TempoCanvas';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, CircleCheck, LayoutDashboard, List, LogOut, NotebookPen, Settings, Utensils } from "lucide-react";
+import { CircleAlert, CircleCheck } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
-import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { AppNavigation } from "@/components/shared/AppNavigation";
+import { AccountLayout } from "@/components/shared/AccountLayout";
+import { FitTempoBrand } from "@/components/shared/FitTempoBrand";
 import { DayStrip, type DayEvent } from "@/components/shared/DayStrip";
+import { GlassPanel } from "@/components/shared/GlassPanel";
 import type { Session } from "@/lib/api/session";
 
 type SessionProps = { session: Session };
 const inputClass = "tempo-field";
-
-function Brand() {
-  return <span className="tempo-wordmark text-xl font-bold tracking-tight">Fit Tempo</span>;
-}
 
 const sampleEvents = [
   { id: "sample-breakfast", occurredAt: "2026-11-19T00:00:00Z", kind: "meal", name: "Oats and berries", amount: "1 bowl" },
@@ -23,17 +24,19 @@ const sampleEvents = [
 
 function AuthFrame({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <main className="mx-auto grid min-h-svh max-w-7xl content-start gap-10 px-5 py-8 sm:px-8 lg:content-center lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-16 lg:py-16">
+    <main className="tempo-canvas mx-auto grid min-h-svh max-w-7xl content-start gap-4 px-4 py-6 sm:px-8 md:gap-5 lg:content-center lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-16">
+      <TempoCanvas />
       <div className="min-w-0 space-y-5">
-        <Brand />
-        <section className="tempo-form space-y-5">
-          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-          {children}
-        </section>
+        <FitTempoBrand />
+        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <GlassPanel tone="solid">{children}</GlassPanel>
       </div>
-      <aside className="min-w-0 space-y-8 border-t border-border pt-8 lg:border-t-0 lg:pt-12">
-        <p className="tempo-wordmark max-w-[14ch] text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl xl:text-6xl">Your meals. Your movement. Your rhythm.</p>
-        <DayStrip date="2026-11-19" timeZone="Asia/Manila" events={sampleEvents} sample />
+      <aside className="min-w-0 lg:pt-12">
+        <details className="space-y-3">
+          <summary className="min-h-11 cursor-pointer content-center font-medium">Preview a sample day</summary>
+          <p className="tempo-wordmark text-xl font-bold tracking-tight">Your meals. Your movement. Your rhythm.</p>
+          <DayStrip date="2026-11-19" timeZone="Asia/Manila" events={sampleEvents} sample panel />
+        </details>
       </aside>
     </main>
   );
@@ -41,7 +44,7 @@ function AuthFrame({ title, children }: { title: string; children: ReactNode }) 
 
 function AuthLink({ to, children }: { to: string; children: ReactNode }) {
   return (
-    <Link className="font-medium text-accent underline underline-offset-4" to={to}>
+    <Link className="inline-flex min-h-11 items-center font-medium text-accent underline underline-offset-4" to={to}>
       {children}
     </Link>
   );
@@ -60,6 +63,8 @@ type FormValues = { email: string; password: string };
 
 function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; token?: string }) {
   const config = forms[mode];
+  const redesigned = mode === "signIn" || mode === "register";
+  const Layout = redesigned || mode === "resend" ? AccountLayout : AuthFrame;
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   useEffect(() => {
     if (mode === "signIn" && session.getSnapshot().status === "checking") void session.initialize();
@@ -80,7 +85,6 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
   if (mode === "signIn" && snapshot.status === "authenticated") return <Navigate to="/app" replace />;
 
   const submit = handleSubmit(async ({ email, password }) => {
-    setMessage("");
     try {
       switch (mode) {
         case "signIn":
@@ -96,7 +100,7 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
           break;
         case "resend":
           await session.resendVerification(email);
-          setMessage("If the account needs verification, a link will arrive by email.");
+          setMessage("Request received. If your account still needs verification, check your inbox and spam folder for a link.");
           break;
         case "reset":
           if (!token) return;
@@ -111,15 +115,23 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
   });
 
   return (
-    <AuthFrame title={config.title}>
+    <Layout title={config.title} intro={(redesigned || mode === "resend") && (
+      <p className="account-intro text-sm text-muted-foreground">
+        {mode === "resend" ? "Enter the email address you used to create your Fit Tempo account."
+          : mode === "signIn" ? <>New to Fit Tempo? <AuthLink to="/register">Create account</AuthLink></>
+          : <>Already have an account? <AuthLink to="/sign-in">Sign in</AuthLink></>}
+      </p>
+    )}>
       <form className="space-y-4" noValidate onSubmit={(event) => {
         setFailure("");
+        setMessage("");
         void submit(event);
       }}>
         {config.email && (
           <div className="space-y-1.5">
             <label className="block text-sm font-medium" htmlFor="account-email">Email address</label>
-            <input id="account-email" type="email" autoComplete="email" className={inputClass}
+            <input id="account-email" type="email" autoComplete={redesigned ? "username" : "email"} className={inputClass}
+              required spellCheck={false} enterKeyHint={config.password ? "next" : "go"}
               aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "account-email-error" : undefined}
               {...register("email")} />
             {errors.email && <p id="account-email-error" className="flex items-start gap-2 text-sm text-destructive"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{errors.email.message}</p>}
@@ -130,31 +142,34 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
             <label className="block text-sm font-medium" htmlFor="account-password">
               {mode === "reset" ? "New password" : "Password"}
             </label>
-            <input id="account-password" type="password" className={inputClass}
+            <input id="account-password" type="password" className={inputClass} required enterKeyHint="go"
               autoComplete={mode === "signIn" ? "current-password" : "new-password"}
               aria-invalid={Boolean(errors.password)}
               aria-describedby={errors.password ? "account-password-error" : undefined} {...register("password")} />
             {errors.password && (
               <p id="account-password-error" className="flex items-start gap-2 text-sm text-destructive"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{errors.password.message}</p>
             )}
+            {mode === "signIn" && <AuthLink to="/forgot-password">Forgot password?</AuthLink>}
           </div>
         )}
         {failure && <p role="alert" className="flex items-start gap-2 text-sm text-destructive"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{failure}</p>}
-        {message && <p role="status" className="flex items-start gap-2 text-sm text-success"><CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{message}</p>}
-        <Button type="submit" className="w-full" disabled={isSubmitting || (mode === "signIn" && snapshot.status === "checking") || (mode === "reset" && Boolean(message))}>
+        {mode === "resend" ? (
+          <div role="status">
+            {isSubmitting ? <p className="text-sm text-muted-foreground">Requesting a verification link…</p>
+              : message && <p className="text-sm text-success">{message}</p>}
+          </div>
+        ) : message && <p role="status" className="flex items-start gap-2 text-sm text-success"><CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{message}</p>}
+        <Button type="submit" className="min-h-11 w-full" disabled={isSubmitting || (mode === "signIn" && snapshot.status === "checking") || (mode === "reset" && Boolean(message))}>
           {isSubmitting ? "Please wait…" : config.button}
         </Button>
       </form>
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-        {mode === "signIn" ? (
-          <>
-            <AuthLink to="/register">Create account</AuthLink>
-            <AuthLink to="/forgot-password">Forgot password?</AuthLink>
-            <AuthLink to="/resend-verification">Resend verification</AuthLink>
-          </>
-        ) : <AuthLink to="/sign-in">Go to sign in</AuthLink>}
-      </div>
-    </AuthFrame>
+      {mode !== "register" && (
+        <div className="mt-3 text-sm">
+          {mode === "signIn" ? <AuthLink to="/resend-verification">Resend verification</AuthLink>
+            : <AuthLink to="/sign-in">Go to sign in</AuthLink>}
+        </div>
+      )}
+    </Layout>
   );
 }
 
@@ -183,12 +198,18 @@ export function VerifyEmailPage({ session }: SessionProps) {
   const [state, setState] = useState<"idle" | "working" | "verified">("idle");
   const [error, setError] = useState("");
   return (
-    <AuthFrame title="Verify your email">
-      {!token && <p className="mb-4 text-sm text-muted-foreground">Open the verification link from your email.</p>}
-      {state === "verified" && <p role="status" className="mb-4 flex items-start gap-2 text-sm text-success"><CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Email verified. You can now sign in.</p>}
+    <AccountLayout title="Verify your email" intro={state !== "verified" && (
+      <p className="account-intro text-sm text-muted-foreground">
+        {token ? "Confirm your email address to finish setting up your Fit Tempo account."
+          : "Open the verification link from your email, or request a new one."}
+      </p>
+    )}>
+      <div role="status">
+        {state === "verified" && <p className="mb-4 mt-3 flex items-start gap-2 text-sm text-success"><CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />Email verified. You can now sign in.</p>}
+      </div>
       {error && <p role="alert" className="mb-4 flex items-start gap-2 text-sm text-destructive"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{error}</p>}
       {token && state !== "verified" && (
-        <Button type="button" disabled={state === "working"} onClick={() => {
+        <Button type="button" className="w-full" disabled={state === "working"} onClick={() => {
           setError("");
           setState("working");
           void session.verifyEmail(token).then(() => setState("verified"), (reason: unknown) => {
@@ -197,11 +218,18 @@ export function VerifyEmailPage({ session }: SessionProps) {
           });
         }}>{state === "working" ? "Verifying…" : "Verify email"}</Button>
       )}
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-        <AuthLink to="/sign-in">Go to sign in</AuthLink>
-        <AuthLink to="/resend-verification">Request a new link</AuthLink>
-      </div>
-    </AuthFrame>
+      {state === "verified" ? (
+        <Button asChild className="w-full"><Link to="/sign-in">Go to sign in</Link></Button>
+      ) : (
+        <>
+          {!token && <Button asChild className="w-full"><Link to="/resend-verification">Request a new link</Link></Button>}
+          <div className="mt-3 flex flex-wrap gap-x-4 text-sm">
+            <AuthLink to="/sign-in">Go to sign in</AuthLink>
+            {token && <AuthLink to="/resend-verification">Request a new link</AuthLink>}
+          </div>
+        </>
+      )}
+    </AccountLayout>
   );
 }
 
@@ -236,44 +264,14 @@ export function ProtectedLayout({ session }: SessionProps) {
   }
 
   const admin = snapshot.user.role === "admin";
-  const routes = [
-    { to: "/app", label: "Today", Icon: LayoutDashboard },
-    { to: "/app/meals", label: "Meals", Icon: NotebookPen },
-    { to: "/app/foods", label: "Food", Icon: Utensils },
-    { to: "/app/ingredients", label: "Recipes and pantry", Icon: List },
-    { to: "/app/profile", label: "Settings", Icon: Settings },
-  ];
   return (
-    <div className="min-h-svh md:grid md:grid-cols-[4.5rem_minmax(0,1fr)] lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <div className={`tempo-canvas ${admin ? "tempo-canvas-admin" : ""} min-h-svh md:grid md:grid-cols-[4.5rem_minmax(0,1fr)] lg:grid-cols-[14rem_minmax(0,1fr)]`}>
+      <TempoCanvas />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-40 focus:bg-card focus:p-3">
         Skip to content
       </a>
-      <aside className={`tempo-rail ${admin ? "tempo-admin-rail" : ""} bg-rail text-rail-foreground md:sticky md:top-0 md:flex md:h-svh md:flex-col`}>
-        <header className="flex min-h-16 items-center justify-between gap-3 px-5 md:justify-center md:px-2 lg:justify-between lg:px-5">
-          <Link to="/app" aria-label="Fit Tempo dashboard" className="md:hidden lg:inline-flex"><Brand /></Link>
-          <Link to="/app" aria-label="Fit Tempo dashboard" className="hidden font-bold md:inline-flex lg:hidden">{admin ? "Admin" : "FT"}</Link>
-          {admin && <span className="rounded-full bg-background px-2 py-0.5 text-sm font-semibold text-foreground md:hidden lg:inline">Admin</span>}
-          <Button variant="outline" className="md:hidden" disabled={signingOut} onClick={signOut}>
-            <LogOut aria-hidden="true" size={17} /> {signingOut ? "Signing out." : "Sign out"}
-          </Button>
-        </header>
-        <nav aria-label={admin ? "Admin navigation" : "App navigation"} className="tempo-mobile-nav fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 gap-1 border-t border-border bg-rail px-1 pt-1 pb-[max(.25rem,env(safe-area-inset-bottom))] md:static md:flex md:flex-1 md:flex-col md:border-t-0 md:px-2">
-          {routes.map(({ to, label, Icon }) => (
-            <NavLink key={to} to={to} end={to === "/app"} title={label} aria-label={label}
-              className="tempo-nav-link relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-1 text-center text-xs leading-tight md:flex-row md:gap-3 md:text-sm lg:justify-start lg:px-4">
-              <Icon aria-hidden="true" size={19} className="shrink-0" />
-              <span className="md:sr-only lg:not-sr-only">{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-        <div className="hidden px-2 pb-4 md:block lg:px-4">
-          <Button variant="outline" className="w-full" aria-label="Sign out" title="Sign out" disabled={signingOut} onClick={signOut}>
-            <LogOut aria-hidden="true" size={17} /> <span className="sr-only lg:not-sr-only">{signingOut ? "Signing out." : "Sign out"}</span>
-          </Button>
-        </div>
-      </aside>
-      <main id="main-content" tabIndex={-1} className="mx-auto w-full min-w-0 max-w-6xl px-5 pt-6 pb-28 sm:px-8 md:py-10 xl:px-12">
-        {admin && <p className="mb-4 text-sm font-medium text-muted-foreground">Admin workspace</p>}
+      <AppNavigation admin={admin} brand={<FitTempoBrand />} onSignOut={signOut} signingOut={signingOut} />
+      <main id="main-content" tabIndex={-1} className="tempo-mobile-content mx-auto w-full min-w-0 max-w-6xl px-5 pt-6 sm:px-8 md:py-10 xl:px-12">
         {failure && <p role="alert" className="mb-4 flex items-start gap-2 text-sm text-destructive"><CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{failure}</p>}
         {!signingOut && <Outlet key={snapshot.user.id} />}
       </main>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getDayBounds, hour } from './day-strip-time'
 import { UnrecordedHatch } from './UnrecordedHatch'
+import { GlassPanel } from './GlassPanel'
 
 export type DayEvent = {
   id: string
@@ -17,6 +18,7 @@ type DayStripProps = {
   events: readonly DayEvent[]
   state?: 'unrecorded' | 'partial' | 'complete'
   sample?: boolean
+  panel?: boolean
 }
 
 const states = { unrecorded: 'Not recorded', partial: 'Partial', complete: 'Closed' }
@@ -47,7 +49,7 @@ function useNow(enabled: boolean) {
   return enabled ? now : null
 }
 
-export function DayStrip({ date, timeZone, events, state, sample = false }: DayStripProps) {
+export function DayStrip({ date, timeZone, events, state, sample = false, panel = false }: DayStripProps) {
   const now = useNow(!sample)
   const [focused, setFocused] = useState<string | null>(null)
   const [hovered, setHovered] = useState<string | null>(null)
@@ -72,12 +74,16 @@ export function DayStrip({ date, timeZone, events, state, sample = false }: DayS
   const active = entries.find(event => event.id === (focused ?? hovered))
   const showNow = now !== null && now >= start && now < end
 
-  return (
-    <section aria-label={sample ? 'Sample day strip' : 'Day strip'} className="space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-xl font-semibold">{sample ? 'Sample day' : 'Day strip'}</h2>
-        {state && <p className="text-sm font-medium text-muted-foreground">{states[state]}</p>}
-      </div>
+  const title = sample ? 'Sample day' : 'Day strip'
+  const status = state && <p className="text-sm font-medium text-muted-foreground">{states[state]}</p>
+  const legend = (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
+      <p className="text-muted-foreground">Not recorded between marks</p>
+      {showNow && <p className="text-muted-foreground">Now {time.format(now)}</p>}
+      {sample && <p className="text-muted-foreground">Fictional example</p>}
+    </div>
+  )
+  const strip = (
       <div className="relative mx-4 min-w-0">
         <div className="relative h-14 border-b border-border">
           <div className="pointer-events-none absolute inset-x-0 bottom-0"><UnrecordedHatch /></div>
@@ -102,11 +108,9 @@ export function DayStrip({ date, timeZone, events, state, sample = false }: DayS
           <span className="absolute right-0 translate-x-1/2">{tickTime.format(end)}</span>
         </div>
       </div>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
-        <p className="text-muted-foreground">Not recorded between marks</p>
-        {showNow && <p className="text-muted-foreground">Now {time.format(now)}</p>}
-        {sample && <p className="text-muted-foreground">Fictional example</p>}
-      </div>
+  )
+  const details = (
+    <>
       <p aria-hidden="true" className="min-h-6 break-words text-sm font-medium">{active && description(active)}</p>
       {outside.length > 0 && <div className="space-y-1 text-sm">
         <p className="font-medium">Records outside this time zone's day</p>
@@ -117,6 +121,19 @@ export function DayStrip({ date, timeZone, events, state, sample = false }: DayS
       {entries.length > 0 && <ul className="sr-only" aria-label="Day strip events">
         {entries.map(event => <li key={event.id}>{description(event)}</li>)}
       </ul>}
-    </section>
+    </>
   )
+  if (panel) return <GlassPanel title={title} status={status} footer={legend}>
+    <div className="space-y-3">{strip}{details}</div>
+  </GlassPanel>
+
+  return <section aria-label={sample ? 'Sample day strip' : 'Day strip'} className="space-y-3 bg-background">
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <h2 className="text-xl font-semibold">{title}</h2>
+      {status}
+    </div>
+    {strip}
+    {legend}
+    {details}
+  </section>
 }

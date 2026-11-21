@@ -25,6 +25,10 @@ Keep AGENTS.md concise and current: project purpose/stack, repository layout, ve
 
 Continue unblocked local work; never invent credentials, service quotas, real delivery or deployment success. Preserve unrelated files. Do not provision paid services, grant privileges, or publish production without applicable authorization. Finish a concrete reviewable release candidate before any final publication decision. Stop at a requested phase boundary and report outcome and remaining work.
 
+## UI conventions
+
+Follow the project design system in docs/DESIGN_SYSTEM.md and the UI conventions in the recovery skill. Reuse the shared solid theme canvas. Use GlassPanel for coherent sections, with solid cards for forms and tables and a five-surface cap for visible glass. Put the current task first and disclose secondary details in place. Keep the Day strip and ledger flat, and reuse the shared chart and picker components. Add new routes to the shared navigation config, default to the More sheet, and cap the mobile bar at five slots.
+
 ## Setup and continuation
 
 Follow Section 8.1 for Phase 03 Vite React/TypeScript setup, root npm workspaces and one lockfile, aliases, compatible Tailwind/shadcn integration, Fast Refresh and same-origin API proxy checks. Inspect actual files and verify commands before documenting them.

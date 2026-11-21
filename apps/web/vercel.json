@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm --prefix ../.. run build:contracts && npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    { "src": "/api", "dest": "https://staging-api.invalid/api" },
+    { "src": "/api/(.*)", "dest": "https://staging-api.invalid/api/$1" },
+    { "handle": "filesystem" },
+    { "src": "/(?!assets(?:/|$)|.*\\.[^/]+$).*", "dest": "/index.html" }
+  ]
+}

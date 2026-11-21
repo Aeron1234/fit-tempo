@@ -7,9 +7,9 @@ export const healthResponseSchema = z.object({
     service: z.literal('fit-tempo-api'),
     mode: z.enum(['local', 'synthetic-demo']),
     capabilities: z.object({
-      ai: z.literal(false),
-      email: z.literal('test-mailbox'),
-      scheduler: z.literal('manual-dry-run'),
+      ai: z.boolean(),
+      email: z.enum(['test-mailbox', 'emailjs']),
+      scheduler: z.enum(['manual-dry-run', 'hobby-daily']),
     }),
   }),
 });
@@ -26,3 +26,11 @@ export * from './catalog.js';
 
 export * from './meals.js';
 export * from './ingredients.js';
+export * from './planner.js';
+export * from './exercises.js';
+export * from './workouts.js';
+export * from './schedule.js';
+export * from './activity.js';
+export * from './hydration.js';
+export * from './food-recognition.js';
+export * from './analytics.js';

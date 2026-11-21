@@ -33,7 +33,7 @@ MVP: account verification/recovery, dashboard, manual food/water/body/activity l
 | Auth | Argon2id, maintained JWT/JOSE library, HttpOnly cookies | Custom session-backed JWT login/logout |
 | AI | Gemini provider adapter | Photo food suggestions and optional explanation/ranking |
 | Food data | USDA FoodData Central, Open Food Facts | Nutrient lookup and barcode records |
-| Email | EmailJS via @emailjs/nodejs | Backend-triggered fixed templates through a connected sender |
+| Email | EmailJS through its server-side send API | Backend-triggered fixed templates through a connected sender |
 | Scheduler | Vercel Cron Jobs | Authenticated production endpoint triggers persisted jobs |
 | Files | Supabase Storage (private bucket, S3-compatible API) | Authenticated uploads through Express, short-lived signed reads, file metadata in PostgreSQL |
 | Tests | Vitest, API integration tooling, Playwright | Business rules, auth, concurrency, browser flows |
@@ -249,7 +249,9 @@ Example: POST meals -> session/CSRF/quota -> Zod -> meal service -> owned food/r
 
 ## 8. Frontend architecture
 
-Fit Tempo uses a chalk canvas, ink-navy navigation, a tempo-orange accent, a Day strip and flat ledger rows. See [the design system](docs/DESIGN_SYSTEM.md).
+User-facing failure recovery follows the [frontend error guide](docs/FRONTEND_ERRORS.md). The [backend error guide](docs/BACKEND_ERRORS.md) documents the existing error envelope and proposed middleware fixes. Keep authentication, resource visibility, and retry receipts authoritative when designing recovery actions.
+
+Fit Tempo uses a full-viewport solid theme canvas, ink-navy navigation, tempo-orange accents, a Day strip and flat ledger rows. Use GlassPanel as the shared section frame. Read-only summaries can use glass within the visible surface limit. Forms, tables and editable fields use solid cards. Put primary actions and decision information first, and disclose secondary details in place. Use the shared chart frame and picker primitives while preserving dates, units, unknown values and confirmation boundaries. The route config drives the rail and More sheet, with no more than five slots in the mobile bar. See [the design system](docs/DESIGN_SYSTEM.md).
 
 ```text
 apps/web/src/
@@ -348,7 +350,7 @@ Phase 03 gate: scaffold/version matrix and workspace commands documented; alias/
 
 ## 9. Account email through EmailJS
 
-EmailJS is a sender integration, not an authentication provider. Express invokes @emailjs/nodejs with private authorization/non-browser sending enabled in the EmailJS dashboard. Choose a connected transactional sender for production; EmailJS recommends personal mailboxes only for development/very low volume. Account templates: verify account, reset password, password changed, security change, optional welcome after verification. Never send passwords, password hashes, access/refresh tokens, session cookies or private health summaries in subjects.
+EmailJS is a sender integration, not an authentication provider. Express invokes the EmailJS send API with private authorization and non-browser sending enabled in the EmailJS dashboard. The Phase 21 adapter uses the documented HTTPS endpoint with cancellation and redirects disabled. Choose a connected transactional sender for production; EmailJS recommends personal mailboxes only for development/very low volume. Account templates: verify account, reset password, password changed, security change, optional welcome after verification. Never send passwords, password hashes, access/refresh tokens, session cookies or private health summaries in subjects.
 
 Express generates random purpose-bound one-use verification/reset secrets; store hashes/expiry, build links from a canonical frontend origin, validate/consume on POST. Proposed reset lifetime 15 minutes and verification lifetime 24 hours. Reset consumes token and changes hash/revokes sessions transactionally. Generic recovery response prevents enumeration. Notification errors do not undo a completed password change. Only authorized test recipients receive integration-test messages.
 

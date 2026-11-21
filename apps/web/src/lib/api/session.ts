@@ -207,7 +207,7 @@ export function createSession(queryClient: QueryClient) {
     mutation?: { method: PrivateMethod; body: object },
   ): Promise<T> {
     const pathname = path.split('?')[0]
-    if (!/^\/(?:me|foods)(?:\/[\w-]+)*$/.test(pathname) || path.includes('#'))
+    if (!/^\/(?:me|foods|admin)(?:\/[\w-]+)*$/.test(pathname) || path.includes('#'))
       throw new Error('Invalid private API path.')
     const expected = generation
     const user = identity

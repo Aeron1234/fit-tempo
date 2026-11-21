@@ -47,11 +47,17 @@ test('dashboard Day strip uses owner-scoped meal records without inventing calor
       id: 'meal', occurredAt: '2026-11-16T04:00:00.000Z', mealType: 'lunch',
       totals: { energyKcal: null }, missingNutrients: ['energyKcal'],
     }], nextCursor: null } })
+    client.setQueryData(['private', 'owner', 'water', '2026-11-16'], { data: {
+      date: '2026-11-16', timeZone: 'Asia/Manila', totalMl: '250.5', entries: [],
+    } })
     const result = renderToString(h(QueryClientProvider, { client },
       h(MemoryRouter, null, h(DashboardPage, { session })),
     ))
     assert.match(result, /aria-label="Day strip events"/)
     assert.match(result, /Lunch, Calories unavailable/)
+    assert.equal((result.match(/<section[^>]*class="glass-panel/g) ?? []).length, 3)
+    assert.match(result, /250\.5 mL recorded/)
+    assert.match(result, /<footer[^>]*>.*Not recorded between marks.*<\/footer>/s)
   } finally {
     client.clear()
   }

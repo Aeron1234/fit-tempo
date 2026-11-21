@@ -27,6 +27,8 @@ Continue unblocked local work; never invent credentials, service quotas, real de
 
 ## UI conventions
 
+Use the shared solid theme canvas. Use `GlassPanel` for coherent sections and put the active task first. Keep the Day strip and ledgers flat inside their cards. Use solid cards for forms, tables and editable fields, and cap visible glass at five surfaces. Use shared chart and picker components, and disclose secondary details in place. Add new routes to the shared navigation config and default them to More. Keep the mobile bar at five slots or fewer.
+
 Use Fit Tempo's chalk, ink-navy and tempo-orange tokens in the web theme. Keep saturated orange controls ink-labeled. Reuse the Day strip and flat ledger, retain the saved theme preference and keep unknown data separate from zero. Follow [the design system](../../../docs/DESIGN_SYSTEM.md) for future UI work.
 
 ## Setup and continuation

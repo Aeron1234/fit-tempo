@@ -1,5 +1,228 @@
 @import "tailwindcss";
 
+.account-layout {
+  display: grid;
+  align-items: safe center;
+  min-block-size: 100svh;
+  padding: clamp(0.75rem, 4vw, 3rem);
+}
+
+.account-layout-grid {
+  display: grid;
+  gap: 0.75rem;
+  inline-size: min(100%, 72rem);
+  margin-inline: auto;
+}
+
+.account-form-card,
+.account-features {
+  min-inline-size: 0;
+  border-radius: 1rem;
+}
+
+.account-form-card {
+  display: grid;
+  align-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.account-form-inner {
+  inline-size: min(100%, 25rem);
+  margin-inline: auto;
+}
+
+.account-form-card h1 {
+  margin-block: clamp(1.5rem, 4vw, 3rem) 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.875rem, 4vw, 3rem);
+  font-weight: 750;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.account-intro {
+  margin-block: 0.25rem 1rem;
+}
+
+.account-form-card input {
+  min-block-size: 3rem;
+  font-size: 1rem;
+  scroll-margin-block: 1rem;
+}
+
+.account-features {
+  --account-feature-padding: clamp(1rem, 3vw, 2rem);
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  padding-block-end: var(--account-feature-padding);
+  overflow: hidden;
+  background: #251215;
+  color: #fff;
+}
+
+.account-feature-art {
+  position: relative;
+  min-block-size: clamp(13rem, 80vw, 24rem);
+  background: #351916;
+}
+
+.account-hero-image {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: contain;
+  opacity: 0;
+}
+
+.account-hero-image[data-active="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .account-hero-image {
+    transition: opacity 1.5s ease-in-out;
+  }
+}
+
+.account-feature-copy,
+.account-carousel-controls {
+  margin-inline: var(--account-feature-padding);
+}
+
+.account-feature-copy {
+  display: grid;
+  padding-block-start: 1rem;
+}
+
+.account-feature-copy > div {
+  grid-area: 1 / 1;
+}
+
+.account-feature-copy > div[data-active="false"] {
+  visibility: hidden;
+}
+
+.account-feature-copy h2 {
+  margin-block-end: 0.4rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3.1vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.account-feature-copy p {
+  max-inline-size: 36ch;
+  color: #fff3ed;
+}
+
+.account-carousel-controls,
+.account-slide-markers {
+  display: flex;
+  align-items: center;
+}
+
+.account-carousel-controls {
+  justify-content: space-between;
+  margin-block-start: 0.75rem;
+}
+
+.account-carousel-controls button {
+  display: grid;
+  place-items: center;
+  inline-size: 2.75rem;
+  min-block-size: 2.75rem;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.account-carousel-controls > button {
+  border: 1px solid rgb(255 255 255 / 65%);
+}
+
+.account-carousel-controls button:hover {
+  background: rgb(255 255 255 / 18%);
+}
+
+.account-carousel-controls button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.account-slide-markers button::before {
+  content: "";
+  inline-size: 1.2rem;
+  block-size: 0.25rem;
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 60%);
+}
+
+.account-slide-markers button[aria-current]::before {
+  inline-size: 1.65rem;
+  background: var(--primary);
+}
+
+@media (width < 56rem) {
+  .account-layout {
+    align-items: start;
+    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+  }
+
+  .account-layout-grid {
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: var(--card);
+  }
+
+  .account-features {
+    --account-feature-padding: 1rem;
+    border-radius: 1.4rem 1.4rem 0 0;
+  }
+
+  .account-feature-copy {
+    font-size: 0.875rem;
+  }
+
+  .account-feature-copy h2 { font-size: 1.25rem; }
+  .account-carousel-controls { margin-block-start: 0.375rem; }
+
+  .account-form-card {
+    border: 0;
+    border-radius: 0 0 1.4rem 1.4rem;
+    padding: 1.25rem 1rem;
+  }
+
+  .account-form-card h1 { margin-block-start: 0.75rem; }
+}
+
+@media (min-width: 56rem) {
+  .account-layout-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    background: var(--card);
+  }
+
+  .account-form-card {
+    grid-area: 1 / 2;
+    border: 0;
+  }
+
+  .account-features {
+    grid-area: 1 / 1;
+  }
+
+  .account-feature-art {
+    min-block-size: clamp(24rem, 56svh, 36rem);
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-card: var(--card);
@@ -34,7 +257,7 @@
 
 :root {
   color-scheme: light;
-  --background: #EEF2F6;
+  --background: #DCEAFB;
   --card: #FFFFFF;
   --foreground: #0E2A47;
   --muted: #DFE7F0;
@@ -63,6 +286,26 @@
   --chart-5: #8C560D;
   --nav-tick: var(--primary);
   --overlay-shadow: 0 6px 0 color-mix(in srgb, var(--rail) 28%, transparent);
+  --tempo-admin-base: #E2EAF3;
+  --tempo-canvas-text-boost: 45%;
+  --tempo-canvas-muted-text: color-mix(in srgb, var(--foreground) var(--tempo-canvas-text-boost), var(--muted-foreground));
+  --tempo-canvas-accent-text: color-mix(in srgb, var(--foreground) var(--tempo-canvas-text-boost), var(--accent));
+  --tempo-canvas-success-text: color-mix(in srgb, var(--foreground) var(--tempo-canvas-text-boost), var(--success));
+  --tempo-canvas-warning-text: color-mix(in srgb, var(--foreground) var(--tempo-canvas-text-boost), var(--warning));
+  --tempo-canvas-destructive-text: color-mix(in srgb, var(--foreground) var(--tempo-canvas-text-boost), var(--destructive));
+  --tempo-panel-opacity: 80%;
+  --tempo-panel-blur: 8px;
+  --tempo-panel-border: color-mix(in srgb, var(--card) 45%, transparent);
+  --tempo-panel-highlight: color-mix(in srgb, var(--card) 52%, transparent);
+  --tempo-panel-shadow: 0 8px 24px color-mix(in srgb, var(--rail) 8%, transparent);
+  --tempo-panel-sheen: color-mix(in srgb, var(--card) 6%, transparent);
+  --tempo-glass-bar-opacity: 96%;
+  --tempo-glass-float-opacity: 96%;
+  --tempo-glass-bar-blur: 10px;
+  --tempo-glass-float-blur: 16px;
+  --tempo-glass-saturation: 140%;
+  --tempo-glass-border: color-mix(in srgb, var(--card) 40%, transparent);
+  --tempo-mobile-bar-height: calc(56px + env(safe-area-inset-bottom, 0px));
   font-family: var(--font-sans);
   background: var(--background);
   color: var(--foreground);
@@ -70,7 +313,7 @@
 
 @utility tempo-dark {
   color-scheme: dark;
-  --background: #0C223B;
+  --background: #0A1A2E;
   --card: #112C49;
   --foreground: #EEF2F6;
   --muted: #1F3B57;
@@ -97,6 +340,13 @@
   --chart-3: #77D7A6;
   --chart-4: #C6B0FF;
   --chart-5: #FFD389;
+  --tempo-admin-base: #101D2D;
+  --tempo-canvas-text-boost: 85%;
+  --tempo-panel-opacity: 72%;
+  --tempo-panel-border: color-mix(in srgb, var(--rail-foreground) 14%, transparent);
+  --tempo-panel-highlight: color-mix(in srgb, var(--rail-foreground) 14%, transparent);
+  --tempo-panel-sheen: color-mix(in srgb, var(--rail-foreground) 4%, transparent);
+  --tempo-glass-border: color-mix(in srgb, var(--rail-foreground) 14%, transparent);
 }
 
 :root[data-theme="dark"] { @apply tempo-dark; }
@@ -130,6 +380,12 @@
 
   :where(input, select, textarea)::placeholder { color: var(--muted-foreground); }
 
+  :where(summary) {
+    min-height: 2.75rem;
+    padding-block: .625rem;
+    cursor: pointer;
+  }
+
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
@@ -139,7 +395,7 @@
   ::selection { color: var(--primary-foreground); background: var(--primary); }
 
   @media (max-width: 47.999rem) {
-    :root:has(.tempo-mobile-nav) { scroll-padding-bottom: 7rem; }
+    :root:has(.tempo-mobile-nav) { scroll-padding-bottom: var(--tempo-mobile-bar-height); }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -155,6 +411,132 @@
 @keyframes day-strip-now { from { left: 0; } }
 
 @layer components {
+  .tempo-canvas { isolation: isolate; }
+
+  .tempo-canvas-admin {
+    --background: var(--tempo-admin-base);
+  }
+
+  .tempo-canvas .text-muted-foreground:not(.glass-panel *, .glass-float *, .glass-bar *) {
+    --muted-foreground: var(--tempo-canvas-muted-text);
+  }
+  .tempo-canvas .text-accent:not(.glass-panel *, .glass-float *, .glass-bar *) {
+    --accent: var(--tempo-canvas-accent-text);
+  }
+  .tempo-canvas .text-success:not(.glass-panel *, .glass-float *, .glass-bar *) {
+    --success: var(--tempo-canvas-success-text);
+  }
+  .tempo-canvas .text-warning:not(.glass-panel *, .glass-float *, .glass-bar *) {
+    --warning: var(--tempo-canvas-warning-text);
+  }
+  .tempo-canvas .text-destructive:not(.glass-panel *, .glass-float *, .glass-bar *) {
+    --destructive: var(--tempo-canvas-destructive-text);
+  }
+
+  .tempo-canvas-background {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-color: var(--background);
+  }
+
+  .glass-panel {
+    --glass-base: var(--card);
+    --glass-opacity: var(--tempo-panel-opacity);
+    --glass-blur: var(--tempo-panel-blur);
+    min-width: 0;
+    padding: 20px;
+    color: var(--foreground);
+    border-radius: 16px;
+    border: 1px solid var(--tempo-panel-border);
+    box-shadow: inset 0 1px var(--tempo-panel-highlight), var(--tempo-panel-shadow);
+  }
+
+  @media (min-width: 48rem) {
+    .glass-panel { padding: 24px; }
+  }
+
+  .glass-bar {
+    --glass-base: var(--rail);
+    --glass-opacity: var(--tempo-glass-bar-opacity);
+    --glass-blur: var(--tempo-glass-bar-blur);
+    color: var(--rail-foreground);
+  }
+
+  .glass-bar.tempo-admin-rail,
+  .tempo-admin-rail .glass-bar {
+    --glass-base: var(--rail-foreground);
+    color: var(--rail);
+  }
+
+  .glass-float {
+    --glass-base: var(--card);
+    --glass-opacity: var(--tempo-glass-float-opacity);
+    --glass-blur: var(--tempo-glass-float-blur);
+    color: var(--foreground);
+    border-radius: .75rem;
+    box-shadow: var(--overlay-shadow);
+  }
+
+  .glass-bar, .glass-float { border: 1px solid var(--tempo-glass-border); }
+  .glass-bar, .glass-float, .glass-panel { background: var(--glass-base); }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-bar, .glass-float, .glass-panel {
+      background: color-mix(in srgb, var(--glass-base) var(--glass-opacity), transparent);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--tempo-glass-saturation));
+      backdrop-filter: blur(var(--glass-blur)) saturate(var(--tempo-glass-saturation));
+    }
+    .glass-panel {
+      background-image: linear-gradient(145deg, var(--tempo-panel-sheen), transparent 48%);
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      backdrop-filter: blur(var(--glass-blur));
+    }
+  }
+
+  :is(.glass-float, .glass-bar, .glass-panel) :is(.glass-float, .glass-bar, .glass-panel),
+  .glass-solid {
+    background: var(--glass-base, var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-panel.glass-solid { border-color: var(--border); }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active), print {
+    .glass-bar, .glass-float, .glass-panel {
+      background: var(--glass-base);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media print {
+    .tempo-canvas-background { display: none; }
+    .glass-bar, .glass-float, .glass-panel { box-shadow: none; }
+  }
+
+  .tempo-dashboard, .tempo-dashboard-panels {
+    display: grid;
+    align-items: start;
+    gap: 16px;
+  }
+  .tempo-card-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+
+  @media (min-width: 48rem) {
+    .tempo-dashboard, .tempo-dashboard-panels, .tempo-card-grid { gap: 20px; }
+  }
+
+  @media (min-width: 64rem) {
+    .tempo-dashboard-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tempo-card-grid-wide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
   .tempo-section {
     min-width: 0;
     border-block-start: 1px solid var(--border);
@@ -164,8 +546,11 @@
   .tempo-form {
     min-width: 0;
     padding: clamp(1rem, 3vw, 1.5rem);
-    border: 1px solid var(--border);
     border-radius: .75rem;
+  }
+
+  .tempo-form:not(.glass-float) {
+    border: 1px solid var(--border);
     background: var(--card);
   }
 
@@ -187,6 +572,25 @@
     gap: .25rem 1rem;
     padding-block: .875rem;
     border-block-end: 1px solid var(--border);
+    background: var(--background);
+  }
+
+  :is(.tempo-dashboard-ledger, .dashboard-ledger-row) {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--foreground) 12%, transparent);
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    overflow-wrap: anywhere;
+  }
+  .tempo-dashboard-ledger > dd:not(.tempo-ledger-value) { text-align: start; }
+  :is(.tempo-dashboard-ledger dt, .dashboard-ledger-label) {
+    font: 400 1rem/1.45 var(--font-sans);
+  }
+  :is(.tempo-ledger-value, .dashboard-ledger-value) {
+    font-family: var(--font-display);
+    font-stretch: semi-condensed;
+    font-size: clamp(1.25rem, 1.125rem + .35vw, 1.5rem);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 
   .tempo-ledger > :last-child { text-align: end; }
@@ -223,29 +627,130 @@
   .tempo-nav-link {
     min-width: 0;
     min-height: 2.75rem;
-    border-inline-start: 3px solid transparent;
+    position: relative;
+    transition: background-color 120ms;
   }
 
   .tempo-nav-link[aria-current="page"] {
-    border-inline-start-color: var(--nav-tick);
-    font-weight: 700;
+    background: color-mix(in srgb, var(--rail-foreground) 10%, transparent);
+    font-weight: 600;
+  }
+
+  .tempo-nav-link[aria-current="page"]::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: .25rem;
+    inset-block-start: 50%;
+    translate: 0 -50%;
+    width: 3px;
+    height: 20px;
+    border-radius: 2px;
+    background: var(--nav-tick);
   }
 
   .tempo-admin-rail .tempo-nav-link[aria-current="page"] {
-    border-inline-start-color: transparent;
-    background: var(--rail-foreground);
+    background: color-mix(in srgb, var(--rail) 10%, var(--rail-foreground));
     color: var(--rail);
   }
 
-  .tempo-admin-rail .tempo-nav-link[aria-current="page"]:hover {
+  .tempo-admin-rail .tempo-nav-link[aria-current="page"]::before { background: var(--rail); }
+  .tempo-nav-link[aria-current="page"]:active {
+    background: color-mix(in srgb, var(--rail-foreground) 7%, transparent);
+  }
+  .tempo-admin-rail .tempo-nav-link[aria-current="page"]:active {
+    background: color-mix(in srgb, var(--rail) 16%, var(--rail-foreground));
+  }
+
+  .tempo-mobile-nav { height: var(--tempo-mobile-bar-height); padding-block-end: env(safe-area-inset-bottom, 0px); }
+  .tempo-mobile-header { min-height: calc(48px + env(safe-area-inset-top, 0px)); padding-block-start: env(safe-area-inset-top, 0px); }
+
+  @media (max-width: 47.999rem) {
+    .tempo-mobile-content { padding-block-end: var(--tempo-mobile-bar-height); }
+  }
+
+  :is(.tempo-mobile-slot, .tempo-mobile-link) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 0;
+    color: color-mix(in srgb, var(--rail-foreground) 70%, var(--rail));
+    font-size: .75rem;
+    white-space: nowrap;
+    transition: background-color 120ms;
+  }
+  .tempo-admin-rail :is(.tempo-mobile-slot, .tempo-mobile-link) {
+    color: var(--rail);
+  }
+  :is(.tempo-mobile-slot, .tempo-mobile-link):is([aria-current="page"],[data-current="true"]) {
+    color: inherit;
+    font-weight: 600;
+  }
+  .tempo-mobile-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 28px;
+    border-radius: 8px;
+    transition: background-color 120ms;
+  }
+  .tempo-mobile-icon > svg { width: 22px; height: 22px; }
+  .tempo-more-sheet::backdrop { background: color-mix(in srgb, var(--rail) 28%, transparent); }
+  .tempo-picker-sheet:modal {
+    overscroll-behavior: contain;
+    max-height: 85dvh;
+  }
+  .tempo-picker-sheet::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background: color-mix(in srgb, var(--rail) 28%, transparent);
+  }
+  :is(.tempo-mobile-slot, .tempo-mobile-link):is([aria-current="page"],[data-current="true"]) .tempo-mobile-icon {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
+  :is(.tempo-mobile-slot, .tempo-mobile-link):is([aria-current="page"],[data-current="true"]):active .tempo-mobile-icon {
+    background: color-mix(in srgb, var(--primary) 90%, var(--rail));
+  }
+  .tempo-admin-rail :is(.tempo-mobile-slot, .tempo-mobile-link):is([aria-current="page"],[data-current="true"]) .tempo-mobile-icon {
     background: var(--rail-foreground);
     color: var(--rail);
+    border: 1px solid var(--rail);
+  }
+  .tempo-admin-rail :is(.tempo-mobile-slot, .tempo-mobile-link):is([aria-current="page"],[data-current="true"]):active .tempo-mobile-icon {
+    background: color-mix(in srgb, var(--rail-foreground) 90%, var(--rail));
+  }
+
+  .tempo-rail-footer {
+    flex-shrink: 0;
+    border-block-start: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    padding: .75rem .5rem max(.75rem, env(safe-area-inset-bottom, 0px));
+  }
+  .tempo-sign-out {
+    color: color-mix(in srgb, var(--rail-foreground) 70%, var(--rail));
+    transition: background-color 120ms;
+  }
+  .tempo-admin-rail .tempo-sign-out {
+    color: color-mix(in srgb, var(--rail) 76%, var(--rail-foreground));
+  }
+  .tempo-sign-out:hover, .tempo-sign-out:active {
+    background: color-mix(in srgb, var(--rail-foreground) 10%, transparent);
+  }
+  .tempo-admin-rail .tempo-sign-out:hover, .tempo-admin-rail .tempo-sign-out:active {
+    background: color-mix(in srgb, var(--rail) 10%, transparent);
   }
 
   :is(.tempo-rail, .tempo-admin-rail, .tempo-mobile-nav) :focus-visible {
     --ring: var(--rail-foreground);
     --ring-offset: var(--rail);
     --ring-halo: var(--primary);
+  }
+  .tempo-mobile-nav :focus-visible { --ring-halo: var(--rail); }
+  .tempo-admin-rail :focus-visible {
+    --ring: var(--rail);
+    --ring-offset: var(--rail-foreground);
+    --ring-halo: var(--rail-foreground);
   }
 
   .tempo-now-marker {

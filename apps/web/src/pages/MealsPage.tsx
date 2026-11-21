@@ -1,4 +1,4 @@
-import { useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm, useWatch, type UseFormReturn } from 'react-hook-form';
 import { AlertCircle, Check } from 'lucide-react';
@@ -7,6 +7,8 @@ import {
   catalogFoodSchema, dayStatusResponseSchema, foodLookupSchema, foodUnitSchema, localDateSchema,
   mealEditSchema, mealTypeSchema, mealWriteSchema, revisionSchema, uuidSchema,
 } from '@fit-tempo/contracts';
+import { ValuePicker } from '@/components/shared/ValuePicker';
+import { GlassPanel } from '@/components/shared/GlassPanel';
 import { UnrecordedHatch } from '@/components/shared/UnrecordedHatch';
 import { Button } from '@/components/ui/button';
 import type { Session } from '@/lib/api/session';
@@ -43,8 +45,9 @@ function basisLabel(basis: { kind: string; grams: string | null }) {
   return basis.grams ? `Per serving (${basis.grams} g)` : 'Per serving (gram weight unknown)';
 }
 
-function FoodPicker({ owner, session, select, enabled }: {
+function FoodPicker({ owner, session, select, enabled, selected }: {
   owner: string; session: Session; select: (food: FoodCandidate & { id: string; revision: number }) => void; enabled: boolean;
+  selected: { id: string; label: string };
 }) {
   const [search, setSearch] = useState('');
   const [submitted, setSubmitted] = useState('');
@@ -60,34 +63,25 @@ function FoodPicker({ owner, session, select, enabled }: {
     const revision = 'revision' in food ? revisionSchema.safeParse(food.revision) : undefined;
     return food.id && revision?.success ? [{ ...food, id: food.id, revision: revision.data }] : [];
   });
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="grid min-w-0 grow gap-1.5 text-sm font-semibold">Catalog food name
-          <input type="search" value={search} className={input} maxLength={80} onChange={event => setSearch(event.target.value)}
-              onKeyDown={event => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  if (search.trim().length >= 2) setSubmitted(search.trim());
-                }
-              }} />
-        </label>
-        <Button type="button" variant="outline" disabled={search.trim().length < 2} onClick={() => {
-          if (submitted === search.trim()) void result.refetch();
-          else setSubmitted(search.trim());
-        }}>Search</Button>
-      </div>
-      {result.isFetching && <p className="text-sm" role="status">Searching catalog...</p>}
-      {result.isError && <p className={issue} role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Catalog unavailable. Manual entry is available.</p>}
-      {choices?.length === 0 && <p className="text-sm" role="status">No saved catalog food matches. Use manual entry to log this item.</p>}
-      {choices?.length ? <ul className="space-y-1">{choices.map(food => <li key={food.id}>
-        <Button type="button" variant="outline" className="h-auto max-w-full justify-start whitespace-normal break-words text-left"
-          onClick={() => { select(food); setSearch(''); setSubmitted(''); }}>
-          {food.name} ({basisLabel(food.basis)})
-        </Button>
-      </li>)}</ul> : null}
-    </div>
-  );
+  return <ValuePicker label="Catalog food name" placeholder="Choose a catalog food"
+    value={selected.id} selectedLabel={selected.label} searchable disabled={!enabled}
+    search={search} onSearchChange={setSearch} loading={result.isFetching}
+    onSearchSubmit={draft => {
+      const term = draft.trim();
+      if (term.length < 2) return;
+      if (submitted === term) void result.refetch();
+      else setSubmitted(term);
+    }}
+    emptyMessage={submitted.length < 2 ? 'Enter at least two characters and search.' : 'No saved catalog food matches. Manual entry is available.'}
+    error={result.isError ? 'Catalog unavailable. Manual entry is available.' : undefined}
+    options={(choices ?? []).map(food => ({ value: food.id, label: food.name + ' (' + basisLabel(food.basis) + ')' }))}
+    onValueChange={id => {
+      const food = choices?.find(choice => choice.id === id);
+      if (!food) return;
+      select(food);
+      setSearch('');
+      setSubmitted('');
+    }} />;
 }
 
 function ItemFields({ form, index, owner, session, locked, remove }: {
@@ -108,14 +102,12 @@ function ItemFields({ form, index, owner, session, locked, remove }: {
           <Button type="button" variant="outline" onClick={() => setValue(prefix, { ...blankItem, kind: 'catalog' })}>Replace with catalog food</Button>
         </div>
       </> : <>
-        <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Food source
-          <select className={input} {...register(`${prefix}.kind`)}>
-            <option value="manual">Manual entry</option><option value="catalog">Saved catalog food</option>
-          </select>
-        </label>
+        <ValuePicker label="Food source" value={item.kind} disabled={locked}
+          onValueChange={value => setValue(`${prefix}.kind`, value === 'catalog' ? 'catalog' : 'manual')}
+          options={[{ value: 'manual', label: 'Manual entry' }, { value: 'catalog', label: 'Saved catalog food' }]} />
         {item.kind === 'catalog' ? <>
           {item.foodId && <p>{item.name}, {basisLabel(basis)}</p>}
-          <FoodPicker session={session} owner={owner} enabled={!locked} select={food => {
+          <FoodPicker session={session} owner={owner} enabled={!locked} selected={{ id: item.foodId, label: item.name }} select={food => {
             setValue(prefix, {
               ...blankItem, kind: 'catalog', foodId: food.id, foodRevision: food.revision, name: food.name,
               basis: food.basis.kind, grams: food.basis.grams ?? '',
@@ -125,14 +117,15 @@ function ItemFields({ form, index, owner, session, locked, remove }: {
           }} />
         </> : <>
           <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Food name<input required maxLength={200} className={input} {...register(`${prefix}.name`)} /></label>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Preparation<select className={input} {...register(`${prefix}.preparation`)}>
-              <option value="unknown">Unknown</option><option value="raw">Raw</option><option value="cooked">Cooked</option>
-            </select></label>
-            <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Nutrition label basis<select className={input} {...register(`${prefix}.basis`)}>
-              <option value="per_serving">Per serving</option><option value="per_100g">Per 100 g</option>
-            </select></label>
-          </div>
+          <ValuePicker label="Nutrition label basis" value={item.basis} disabled={locked}
+            onValueChange={value => setValue(`${prefix}.basis`, value === 'per_100g' ? 'per_100g' : 'per_serving')}
+            options={[{ value: 'per_serving', label: 'Per serving' }, { value: 'per_100g', label: 'Per 100 g' }]} />
+          <details className="border-t border-border">
+            <summary className="min-h-11 cursor-pointer py-3 font-medium">Preparation and nutrition (optional)</summary>
+            <div className="space-y-3">
+              <ValuePicker label="Preparation" value={item.preparation} disabled={locked}
+                onValueChange={value => setValue(`${prefix}.preparation`, value === 'raw' || value === 'cooked' ? value : 'unknown')}
+                options={[{ value: 'unknown', label: 'Unknown' }, { value: 'raw', label: 'Raw' }, { value: 'cooked', label: 'Cooked' }]} />
           {item.basis === 'per_serving' && <label className="relative grid min-w-0 gap-1.5 text-sm font-semibold">Grams per serving, if known
             <input inputMode="decimal" className={`${numberInput} pr-12`} {...register(`${prefix}.grams`)} />
               <span aria-hidden="true" className="pointer-events-none absolute bottom-0 right-3 flex min-h-10 items-center text-muted-foreground">g</span>
@@ -147,6 +140,8 @@ function ItemFields({ form, index, owner, session, locked, remove }: {
               </div>
             </label>
           ))}</div>
+            </div>
+          </details>
         </>}
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Amount eaten
@@ -154,9 +149,9 @@ function ItemFields({ form, index, owner, session, locked, remove }: {
               <input required inputMode="decimal" className={`${numberInput} pr-16`} {...register(`${prefix}.quantity`)} />
               <span aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted-foreground">{item.unit}</span>
             </div></label>
-          <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Unit<select className={input} {...register(`${prefix}.unit`)}>
-            {foodUnitSchema.options.map(unit => <option key={unit}>{unit}</option>)}
-          </select></label>
+          <ValuePicker label="Unit" value={item.unit} disabled={locked}
+            onValueChange={value => setValue(`${prefix}.unit`, foodUnitSchema.parse(value))}
+            options={foodUnitSchema.options.map(unit => ({ value: unit, label: unit }))} />
         </div>
         <p className="text-sm text-muted-foreground">Use the serving count or a measured weight when available. Unverified conversions leave totals unknown.</p>
       </>}
@@ -202,7 +197,8 @@ function MealForm({ meal, date, timeZone, owner, session, locked, close, review 
   const { control, handleSubmit, register } = form;
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
   const [error, setError] = useState('');
-  return <form className="tempo-form min-w-0 space-y-5" onSubmit={handleSubmit(fields => {
+  const mealType = useWatch({ control, name: 'mealType' });
+  return <GlassPanel tone="solid"><form className="min-w-0 space-y-5" onSubmit={handleSubmit(fields => {
     const occurredAt = meal && fields.wallTime === defaults.wallTime
       ? meal.occurredAt : resolveMealInstant(fields.wallTime, timeZone);
     if (!occurredAt) {
@@ -227,9 +223,9 @@ function MealForm({ meal, date, timeZone, owner, session, locked, close, review 
   })}>
     <h2 className="text-xl font-semibold">{meal ? 'Edit meal' : 'Log a meal'}</h2>
     <fieldset className="grid gap-3 sm:grid-cols-2" disabled={locked}>
-      <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Meal type<select className={input} {...register('mealType')}>
-        {mealTypeSchema.options.map(type => <option key={type} value={type}>{typeLabels[type]}</option>)}
-      </select></label>
+      <ValuePicker label="Meal type" value={mealType} disabled={locked}
+        onValueChange={value => form.setValue('mealType', mealTypeSchema.parse(value))}
+        options={mealTypeSchema.options.map(value => ({ value, label: typeLabels[value] }))} />
       <label className="grid min-w-0 gap-1.5 text-sm font-semibold">Date and time ({timeZone})
         <input required type="datetime-local" className={input} {...register('wallTime')} />
       </label>
@@ -242,14 +238,14 @@ function MealForm({ meal, date, timeZone, owner, session, locked, close, review 
       <Button type="submit" disabled={locked}>Review {meal ? 'changes' : 'meal'}</Button>
       <Button type="button" variant="outline" disabled={locked} onClick={close}>Cancel</Button>
     </div>
-  </form>;
+  </form></GlassPanel>;
 }
 
 function MealHistoryCard({ meal, edit, deleteMeal, disabled }: {
   meal: MealRow; edit: () => void; deleteMeal: () => void; disabled: boolean;
 }) {
   const displayedTime = mealWallTime(meal.occurredAt, meal.timeZone).slice(11);
-  return <article className="tempo-section min-w-0 space-y-4">
+  return <article className="min-w-0 space-y-4 border-t border-border pt-4">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <div>
         <div className="flex items-center gap-3">
@@ -323,6 +319,7 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
   const [notice, setNotice] = useState('');
   const [failed, setFailed] = useState<'ambiguous' | 'rejected'>();
   const submitting = useRef(false);
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
   const cursor = cursors.at(-1);
   const query = useQuery({
     queryKey: ['private', owner, 'meals', date, cursor], retry: false,
@@ -362,12 +359,13 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
     onSettled: () => { submitting.current = false; },
   });
   const locked = Boolean(action) || save.isPending;
+  useEffect(() => { if (action) reviewHeading.current?.focus(); }, [action]);
   function review(next: MealAction) {
     setNotice('');
     setFailed(undefined);
     setAction(next);
   }
-  return <div className="min-w-0 space-y-8">
+  return <div className="tempo-card-grid min-w-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">Meals</h1>
         <Button type="button" disabled={!day || Boolean(editor) || locked} onClick={() => {
@@ -388,18 +386,18 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
         </label>
         {day && <p className="text-sm text-muted-foreground self-end pb-2">Recorded day time zone: {day.timeZone}</p>}
       </div>
-      {query.isFetching && <p className="text-sm" role="status">Loading meals...</p>}
-      {query.isError && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">
+      {!day && query.isFetching && <GlassPanel title="Meal history" tone="solid"><p className="text-sm" role="status">Loading meals...</p></GlassPanel>}
+      {query.isError && <GlassPanel title="Meal history unavailable" tone="solid"><div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">
         <p className="flex items-start gap-2"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Meal history could not be loaded.</p>
         <Button type="button" variant="outline" onClick={() => void query.refetch()}>Try again</Button>
-      </div>}
+      </div></GlassPanel>}
       {notice && <p className="flex items-start gap-2 text-sm text-success" role="status"><Check size={16} className="shrink-0" aria-hidden="true" />{notice}</p>}
       {editor && day && <MealForm key={editor === 'create' ? 'create' : editor.id} date={day.date}
         timeZone={editor === 'create' ? day.preferredTimeZone : editor.timeZone}
         meal={editor === 'create' ? undefined : editor} owner={owner} session={session} locked={locked}
         close={() => setEditor(undefined)} review={review} />}
-      {action && <section className="tempo-form min-w-0 space-y-4" aria-label="Review nutrition changes">
-        <h2 className="text-lg font-semibold">{confirmLabels[action.method]}</h2>
+      {action && <GlassPanel tone="solid"><div className="min-w-0 space-y-4" aria-label="Review nutrition changes">
+        <h2 ref={reviewHeading} tabIndex={-1} className="text-lg font-semibold">{confirmLabels[action.method]}</h2>
         {action.method === 'DELETE' ? <p>Remove this meal from your log?</p>
           : action.method === 'PUT' && day ? <p>{day.status === 'complete' ? 'Reopen' : 'Mark complete'} the nutrition log for {day.date}?
             {day.status === 'unrecorded' && ' This records zero intake for the day.'}</p>
@@ -432,8 +430,9 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
             setAction(undefined);
           }}>{failed === 'rejected' ? 'Back to history' : 'Cancel confirmation'}</Button>}
         </div>
-      </section>}
-      {day && <section className="tempo-section min-w-0 space-y-4" aria-label="Meal history">
+      </div></GlassPanel>}
+      {day && <GlassPanel tone="solid"><div className="min-w-0 space-y-4" aria-label="Meal history">
+        {query.isFetching && <p className="text-sm" role="status">Loading meals...</p>}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">Meal history</h2>
@@ -459,7 +458,7 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
           <Button type="button" variant="outline" disabled={!nextCursor || locked || Boolean(editor)}
             onClick={() => { if (nextCursor) { setDate(day.date); setCursors(current => [...current, nextCursor]); } }}>More meals</Button>
         </div>}
-      </section>}
+      </div></GlassPanel>}
   </div>;
 }
 

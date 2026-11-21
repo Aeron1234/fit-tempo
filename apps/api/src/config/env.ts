@@ -8,9 +8,20 @@ const environmentSchema = z.object({
   FOOD_ADAPTER: z.enum(['fixtures', 'live']).default('fixtures'),
   USDA_API_KEY: z.string().trim().min(1).optional(),
   OPEN_FOOD_FACTS_USER_AGENT: z.string().trim().min(8).max(200).regex(/^[\x20-\x7e]+$/).optional(),
-  AI_ADAPTER: z.literal('disabled').default('disabled'),
-  EMAIL_ADAPTER: z.literal('test-mailbox').default('test-mailbox'),
-  SCHEDULER_MODE: z.literal('manual-dry-run').default('manual-dry-run'),
+  AI_ADAPTER: z.enum(['disabled', 'synthetic', 'gemini-synthetic']).default('disabled'),
+  GEMINI_API_KEY: z.string().trim().min(1).optional(),
+  GEMINI_MODEL: z.string().trim().regex(/^gemini-[a-z0-9][a-z0-9.-]{0,79}$/).optional(),
+  EMAIL_ADAPTER: z.enum(['test-mailbox', 'emailjs']).default('test-mailbox'),
+  EMAILJS_SERVICE_ID: z.string().trim().min(1).optional(),
+  EMAILJS_PUBLIC_KEY: z.string().trim().min(1).optional(),
+  EMAILJS_PRIVATE_KEY: z.string().trim().min(1).optional(),
+  EMAILJS_VERIFY_TEMPLATE_ID: z.string().trim().min(1).optional(),
+  EMAILJS_RESET_TEMPLATE_ID: z.string().trim().min(1).optional(),
+  SCHEDULER_MODE: z.enum(['manual-dry-run', 'hobby-daily']).default('manual-dry-run'),
+  CRON_SECRET: z.string().regex(/^[!-~]{32,256}$/).optional(),
+  NOTIFICATION_TEST_RECIPIENT: z.email().optional(),
+  EMAILJS_REMINDER_TEMPLATE_ID: z.string().trim().min(1).optional(),
+  EMAILJS_SUMMARY_TEMPLATE_ID: z.string().trim().min(1).optional(),
   DATABASE_URL: z.string().min(1).optional(),
   JWT_ACCESS_SECRET: z.string().min(32).optional(),
   CSRF_SECRET: z.string().min(32).optional(),
@@ -32,16 +43,42 @@ export function readEnvironment(input: NodeJS.ProcessEnv = process.env) {
     throw new Error(`Invalid API configuration fields: ${fields.join(', ')}`);
   }
 
-  if (result.data.NODE_ENV === 'production') {
-    throw new Error('Phase 03 local adapters are unavailable in production.');
-  }
-
   const authFields = [result.data.DATABASE_URL, result.data.JWT_ACCESS_SECRET, result.data.CSRF_SECRET];
+  const email = result.data;
+  if (email.NODE_ENV === 'production' &&
+      (email.EMAIL_ADAPTER !== 'emailjs' || email.APP_MODE !== 'local' || new URL(email.FRONTEND_URL).protocol !== 'https:')) {
+    throw new Error('Production requires EmailJS, local app mode and an HTTPS frontend origin.');
+  }
+  if (email.EMAIL_ADAPTER === 'emailjs') {
+    const origin = new URL(email.FRONTEND_URL);
+    const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname);
+    if (!authFields.every(Boolean) || !email.REDIS_URL || email.APP_MODE !== 'local' ||
+        !(email.EMAILJS_SERVICE_ID && email.EMAILJS_PUBLIC_KEY && email.EMAILJS_PRIVATE_KEY &&
+          email.EMAILJS_VERIFY_TEMPLATE_ID && email.EMAILJS_RESET_TEMPLATE_ID) ||
+        email.EMAILJS_VERIFY_TEMPLATE_ID === email.EMAILJS_RESET_TEMPLATE_ID ||
+        (origin.protocol !== 'https:' && !(origin.protocol === 'http:' && loopback))) {
+      throw new Error('EmailJS requires auth, Redis, local app mode, a secure frontend origin, credentials and two distinct templates.');
+    }
+  }
   if (authFields.some(Boolean) && !authFields.every(Boolean)) {
     throw new Error('Database and auth secret configuration must be supplied together.');
   }
   if (result.data.REDIS_URL && !authFields.every(Boolean)) {
     throw new Error('Redis limits require the complete auth configuration.');
+  }
+  if (email.NOTIFICATION_TEST_RECIPIENT && (
+    email.SCHEDULER_MODE !== 'hobby-daily' || email.EMAIL_ADAPTER !== 'emailjs' || !email.CRON_SECRET ||
+    !email.EMAILJS_REMINDER_TEMPLATE_ID || !email.EMAILJS_SUMMARY_TEMPLATE_ID ||
+    new Set([email.EMAILJS_VERIFY_TEMPLATE_ID, email.EMAILJS_RESET_TEMPLATE_ID,
+      email.EMAILJS_REMINDER_TEMPLATE_ID, email.EMAILJS_SUMMARY_TEMPLATE_ID]).size !== 4
+  )) {
+    throw new Error('Scheduled inbox testing requires Hobby mode, cron authentication, EmailJS and distinct notification templates.');
+  }
+  if (result.data.AI_ADAPTER !== 'disabled' && (result.data.APP_MODE !== 'synthetic-demo' || !result.data.REDIS_URL)) {
+    throw new Error('Food recognition requires synthetic-demo mode and Redis quotas.');
+  }
+  if (result.data.AI_ADAPTER === 'gemini-synthetic' && !(result.data.GEMINI_API_KEY && result.data.GEMINI_MODEL)) {
+    throw new Error('Gemini synthetic food recognition requires a server key and model.');
   }
   if (result.data.FOOD_ADAPTER === 'live' && (
     result.data.APP_MODE !== 'local' || !result.data.REDIS_URL ||

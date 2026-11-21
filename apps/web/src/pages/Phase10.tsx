@@ -1,4 +1,7 @@
-import { useState, useSyncExternalStore } from 'react'
+import { ValuePicker } from '@/components/shared/ValuePicker'
+import { GlassPanel } from '@/components/shared/GlassPanel'
+import { lazy, Suspense, useState, useSyncExternalStore } from 'react'
+import { CameraDialog } from '@/components/shared/CameraDialog'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, Check } from 'lucide-react'
 import { useForm, useWatch } from 'react-hook-form'
@@ -26,11 +29,13 @@ function optionalDecimal(value: string) {
 function ManualFood({ session, owner }: { session: Session; owner: string }) {
   const client = useQueryClient()
   const [notice, setNotice] = useState<{ text: string; failure: boolean } | null>(null)
-  const { register, handleSubmit, reset, control } = useForm<ManualFields>({
+  const { register, handleSubmit, reset, control, setValue } = useForm<ManualFields>({
     defaultValues: { name: '', preparation: 'unknown', basis: 'per_serving', grams: '',
       energyKcal: '', proteinG: '', carbsG: '', fatG: '', fiberG: '', sodiumMg: '' },
   })
-  const perServing = useWatch({ control, name: 'basis' }) === 'per_serving'
+  const basis = useWatch({ control, name: 'basis' })
+  const preparation = useWatch({ control, name: 'preparation' })
+  const perServing = basis === 'per_serving'
   const save = useMutation({
     mutationFn: (food: object) => session.createManualFood(food, manualFoodResponseSchema.parse),
     retry: false,
@@ -42,7 +47,7 @@ function ManualFood({ session, owner }: { session: Session; owner: string }) {
     onError: () => setNotice({ text: 'Save could not be confirmed. Search your catalog before retrying.', failure: true }),
   })
   return (
-    <form className="tempo-form grid gap-4" onSubmit={handleSubmit(fields => {
+    <form className="grid gap-4" onSubmit={handleSubmit(fields => {
       const parsed = manualFoodSchema.safeParse({
         name: fields.name,
         preparation: fields.preparation,
@@ -57,15 +62,14 @@ function ManualFood({ session, owner }: { session: Session; owner: string }) {
       setNotice(null)
       save.mutate(parsed.data)
     })}>
-      <h2 className="text-xl font-semibold">Add a food manually</h2>
       <label className={fieldLabel}>Food name<input className={input} maxLength={200} required {...register('name')} /></label>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className={fieldLabel}>Preparation<select className={input} {...register('preparation')}>
-          <option value="unknown">Unknown</option><option value="raw">Raw</option><option value="cooked">Cooked</option>
-        </select></label>
-        <label className={fieldLabel}>Nutrient basis<select className={input} {...register('basis')}>
-          <option value="per_serving">Per serving</option><option value="per_100g">Per 100 g</option>
-        </select></label>
+        <ValuePicker label="Preparation" value={preparation} disabled={save.isPending}
+          onValueChange={value => setValue('preparation', value === 'raw' || value === 'cooked' ? value : 'unknown')}
+          options={[{ value: 'unknown', label: 'Unknown' }, { value: 'raw', label: 'Raw' }, { value: 'cooked', label: 'Cooked' }]} />
+        <ValuePicker label="Nutrient basis" value={basis} disabled={save.isPending}
+          onValueChange={value => setValue('basis', value === 'per_100g' ? 'per_100g' : 'per_serving')}
+          options={[{ value: 'per_serving', label: 'Per serving' }, { value: 'per_100g', label: 'Per 100 g' }]} />
       </div>
       {perServing && <label className={fieldLabel}>Grams per serving, if known
         <div className="relative min-w-0">
@@ -91,9 +95,16 @@ function ManualFood({ session, owner }: { session: Session; owner: string }) {
   )
 }
 
+const BarcodeCamera = lazy(() => import('@/components/shared/BarcodeCamera'))
+
 export function FoodCatalogPage({ session }: { session: Session }) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot)
-  const owner = snapshot.status === 'authenticated' ? snapshot.user.id : undefined
+  return snapshot.status === 'authenticated'
+    ? <FoodCatalog key={snapshot.user.id} session={session} owner={snapshot.user.id} />
+    : null
+}
+
+function FoodCatalog({ session, owner }: { session: Session; owner: string }) {
   const [value, setValue] = useState('')
   const [mode, setMode] = useState<'search' | 'barcode'>('search')
   const [path, setPath] = useState('')
@@ -103,11 +114,15 @@ export function FoodCatalogPage({ session }: { session: Session }) {
     enabled: Boolean(owner && path), retry: false,
     queryFn: ({ signal }) => session.requestPrivate(path, foodLookupSchema.parse, signal),
   })
-  if (!owner) return null
+  function lookup(next: string) {
+    setValidation('')
+    if (path === next) void result.refetch()
+    else setPath(next)
+  }
   return (
-    <div className="min-w-0 space-y-8">
+    <div className="tempo-card-grid min-w-0">
       <h1 className="text-3xl font-semibold tracking-tight">Food catalog</h1>
-      <form className="tempo-form grid min-w-0 items-end gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]" onSubmit={event => {
+      <GlassPanel tone="solid"><form className="grid min-w-0 items-end gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]" onSubmit={event => {
         event.preventDefault()
         const query = value.trim()
         if (mode === 'barcode' && !/^(?:\d{8}|\d{12,14})$/.test(query)) {
@@ -118,18 +133,13 @@ export function FoodCatalogPage({ session }: { session: Session }) {
           setValidation('Enter at least two characters.')
           return
         }
-        setValidation('')
-        const next = mode === 'search' ? `/foods?q=${encodeURIComponent(query)}` : `/foods/barcode/${query}`
-        if (path === next) void result.refetch()
-        else setPath(next)
+        lookup(mode === 'search' ? `/foods?q=${encodeURIComponent(query)}` : `/foods/barcode/${query}`)
       }}>
-        <label className={fieldLabel}>Look up by<select className={input} value={mode} onChange={event => {
-          setMode(event.target.value === 'barcode' ? 'barcode' : 'search')
+        <ValuePicker label="Look up by" value={mode} onValueChange={value => {
+          setMode(value === 'barcode' ? 'barcode' : 'search')
           setPath('')
           setValidation('')
-        }}>
-          <option value="search">Food name</option><option value="barcode">Barcode</option>
-        </select></label>
+        }} options={[{ value: 'search', label: 'Food name' }, { value: 'barcode', label: 'Barcode' }]} />
         <label className={fieldLabel}>{mode === 'barcode' ? 'Barcode' : 'Food name'}
           <input className={input} value={value} maxLength={80} required
               inputMode={mode === 'barcode' ? 'numeric' : 'search'} onChange={event => setValue(event.target.value)} />
@@ -137,15 +147,29 @@ export function FoodCatalogPage({ session }: { session: Session }) {
         <Button type="submit">Look up</Button>
         {validation && <p className="flex gap-2 text-sm text-destructive sm:col-span-full" role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />{validation}</p>}
       </form>
+      <div className="mt-3">
+        <CameraDialog title="Scan a product barcode" action="Scan barcode"
+          description="Use the rear camera to read the barcode. Only the barcode is sent for lookup.">
+          {close => <Suspense fallback={<p role="status">Loading scanner.</p>}>
+            <BarcodeCamera onBarcode={code => {
+              close()
+              setMode('barcode')
+              setValue(code)
+              lookup(`/foods/barcode/${code}`)
+            }} />
+          </Suspense>}
+        </CameraDialog>
+      </div></GlassPanel>
+      {Boolean(path) && <GlassPanel title="Search results" tone="solid"><div className="space-y-3">
       {result.isFetching && <p className="text-sm text-muted-foreground" role="status">Looking up foods...</p>}
       {result.isError && <p className="flex gap-2 text-sm text-destructive" role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Lookup failed. You can add the food manually below.</p>}
-      {result.data?.meta.status === 'not_found' && <div className="tempo-section space-y-3">
+      {result.data?.meta.status === 'not_found' && <div className="space-y-3">
         <UnrecordedHatch />
         <p className="text-sm" role="status">No matching food found. You can add it manually below.</p>
       </div>}
       {result.data?.meta.status === 'unavailable' && <p className="flex gap-2 text-sm text-warning" role="status"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />A food data source is unavailable. You can add a food manually below.</p>}
       {result.data && result.data.data.length > 0 && <section aria-labelledby="food-results-heading" className="min-w-0 space-y-3">
-        <h2 id="food-results-heading" className="text-xl font-semibold">Search results</h2>
+        <h3 id="food-results-heading" className="sr-only">Food lookup nutrient comparison</h3>
         <div className="tempo-scroll max-h-[32rem] overflow-auto" tabIndex={0} role="region" aria-labelledby="food-results-heading">
           <table className="tempo-table w-full min-w-[46rem] border-separate border-spacing-0 bg-card text-sm">
             <thead className="sticky top-0 z-10 bg-card">
@@ -183,7 +207,11 @@ export function FoodCatalogPage({ session }: { session: Session }) {
           </table>
         </div>
       </section>}
-      <ManualFood session={session} owner={owner} />
+      </div></GlassPanel>}
+      <GlassPanel tone="solid"><details>
+        <summary className="min-h-11 cursor-pointer py-3 font-semibold">Add a food manually</summary>
+        <ManualFood session={session} owner={owner} />
+      </details></GlassPanel>
     </div>
   )
 }

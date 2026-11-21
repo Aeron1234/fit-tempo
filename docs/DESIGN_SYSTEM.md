@@ -12,7 +12,7 @@ The source is `apps/web/src/index.css`. Use Tailwind semantic utilities or `var(
 
 | Token | Light | Dark | Role |
 | --- | --- | --- | --- |
-| `background` | `#EEF2F6` | `#0C223B` | Canvas |
+| `background` | `#DCEAFB` | `#0A1A2E` | Canvas |
 | `card` | `#FFFFFF` | `#112C49` | Forms, tables, menus and dialogs |
 | `foreground` | `#0E2A47` | `#EEF2F6` | Primary content |
 | `muted` | `#DFE7F0` | `#1F3B57` | Subtle highlights |
@@ -46,7 +46,7 @@ Tempo orange retains ink foreground in both themes. The brief’s orange-text an
 
 Use tabular numerals for figures and numeric table columns. Right-align numeric ledger and table values. Keep body measure below approximately 80 characters. The font stacks prefer Archivo and Atkinson Hyperlegible Next if they are installed on the device, followed by local system faces. The requested packages were absent from the workspace and npm cache, and offline npm metadata requests returned ENOTCACHED. No assets or remote requests were added. Use sentence case, a compact line-height and one heading per section.
 
-Spacing follows a 4px rhythm. Controls use 8px corners, form panels and dialogs use 12px corners, and marks and status tags can be fully round. Tables scroll in their own container. Keep the canvas flat. Use one crisp shadow on overlays only.
+Spacing follows a 4px rhythm. Controls use 8px corners, form panels and dialogs use 12px corners, and marks and status tags can be fully round. Tables scroll in their own container. Keep content surfaces flat. Use one crisp shadow on floating layers.
 
 ## Component inventory
 
@@ -57,7 +57,7 @@ Spacing follows a 4px rhythm. Controls use 8px corners, form panels and dialogs 
 | `.tempo-form` and `.tempo-field` | Panel surface for forms and a shared 44px field treatment. |
 | `.tempo-ledger` | One row per metric with a right-aligned amount and visible coverage. |
 | `.tempo-table` and `.tempo-scroll` | Dense, readable data grids with local horizontal scrolling and sticky column headers. |
-| `.tempo-nav-link` | Visible current-page state using a 3px tick. Admin navigation uses ink on chalk. |
+| `.tempo-nav-link` | Desktop and tablet selection with a fill and inset 3px tick. Admin navigation uses ink on chalk. |
 | Day strip | Accessible local-day timeline with mark shapes, hatching and a text equivalent. |
 
 ## Day strip and data truth
@@ -68,12 +68,14 @@ Honor reduced motion. Limit passive motion to a single current-time sweep. Prese
 
 ## Accessibility
 
+For failure states, put the message beside the affected field, action, or section. Use visible text and a clear recovery action. Use the [frontend error guide](FRONTEND_ERRORS.md) for page, form, and in-place recovery patterns.
+
 Focus uses a 2px outline with surface separation and an outer orange halo. Text aims for 4.5:1, and essential boundaries and focus use 3:1. Use the alternate focus treatment on the navigation rail. Maintain touch targets and visible focus without shrinking controls when space is tight.
 
 
 ### Color contrast measurements
 
-WCAG relative luminance calculated for the semantic palette. Rows that group surfaces or states show the lowest pairing against canvas, form surface and muted fill where applicable.
+These Part 1 baseline ratios document the original palette checks. See the canvas and glass measurements below for the solid backgrounds, glass panels and navigation.
 
 | Pair | Minimum | Light | Dark |
 | --- | ---: | ---: | ---: |
@@ -89,3 +91,93 @@ WCAG relative luminance calculated for the semantic palette. Rows that group sur
 | Focus outline and halo | 3.0:1 | 3.76:1 | 5.00:1 |
 | Rail focus outline and halo | 3.0:1 | 5.60:1 | 7.70:1 |
 
+
+The design review removed the duplicate Admin workspace caption. The navigation already identifies the role, so the main column can start with the page heading.
+
+## Background canvas
+
+Mount the shared `TempoCanvas` inside `.tempo-canvas` at each layout boundary. It paints a fixed, solid, pointer-inert viewport background behind content. Public, sign-in and trainee layouts use the theme background. The admin layout uses `.tempo-canvas-admin` to select the existing admin background.
+
+| Context | Light | Dark |
+| --- | --- | --- |
+| Public, sign-in and trainee | `#DCEAFB` | `#0A1A2E` |
+| Admin | `#E2EAF3` | `#101D2D` |
+
+The same solid layer applies at every viewport width. Print hides the fixed canvas and preserves the existing glass print fallback.
+
+## Glass layers and dashboard panels
+
+| Class | Blur | Opacity | Use |
+| --- | ---: | ---: | --- |
+| `.glass-bar` | 10px | 96% | Navigation chrome |
+| `.glass-float` | 16px | 96% | Modal sheets and other floating overlays |
+| `.glass-panel` | 8px | 80% light / 72% dark | Dashboard and read-only summary groups |
+
+Chrome and floating layers retain 140% saturation. `GlassPanel` provides a labeled section, title, optional status and action, body, and optional footer. It has a 16px radius, a 1px border and inner top highlight, a faint neutral sheen, and a single soft resting shadow. Padding is 20px below 768px and 24px wider. Use the solid fallback for an overlay opened inside glass. Do not nest GlassPanel components. Do not animate blur or opacity, tint borders or repeat identical cards.
+
+Forms, editable fields, search results and tables use solid surfaces, including auth forms. Dashboard Day strip and ledger contents are flat within the enclosing panel. Page filters sit outside cards. The Day strip spans the width. Short summaries can share two columns from 1024px with independent heights. Panel gaps are 16px below 768px and 20px wider. Ledger labels use the body face at 16px regular. Values use the display face at 20–24px bold with tabular figures and right alignment. Keep coverage and the unknown/zero distinction visible.
+
+Cap visible glass at five surfaces, counting navigation chrome. The mobile dashboard reaches five with its two panels, two bars and More sheet. Make extra panels solid first where needed. CSS starts with the solid theme surface and enables glass with standard or prefixed backdrop filtering. Missing support, reduced transparency, increased contrast and forced colors return to solid surfaces with their border and shadow.
+
+### Canvas and glass contrast
+
+Minimum WCAG ratios were calculated from the normal and admin theme tokens. The panel calculation composites the glass fill over the solid background and checks both ends of the existing sheen opacity. These values are calculated from source colors.
+
+| Pair | Light | Dark |
+| --- | ---: | ---: |
+| Canvas body text | 11.94:1 | 15.11:1 |
+| Canvas secondary, accent and status text | 7.50:1 | 13.80:1 |
+| Glass panel body text | 14.02:1 | 13.33:1 |
+| Glass panel secondary, accent and status text | 5.67:1 | 7.35:1 |
+
+## Navigation
+
+Add routes once to the typed config in `AppNavigation.tsx` with route, icon, short and full labels, group, and role-specific primary selection. New routes default to More. Below 768px the trainee bar is Today, Meals, Workouts, Food and More. Admin uses Today, Meals, Food, Settings and More. The bar is one row, 56px plus bottom safe area, with 44px minimum targets, 22px icons, 12px single-line labels and matching content clearance. From 768px the icon rail returns, with full labels at the desktop breakpoint.
+
+More opens a labeled modal bottom sheet grouped by Food, Plan, Training or Account. More carries the selection for current secondary routes. Escape returns focus to More. On phones, Sign out stays in the sheet's Account group. At 768px and up, the rail footer pins Sign out below the independently scrollable nav list. It shares the SignOutAction handler and accessible name across placements and is an icon with a tooltip in the collapsed rail. The wordmark is alone above navigation.
+
+The active mobile icon uses a 44px ? 28px pill with an 8px radius. Trainee uses an orange pill and admin uses chalk with an ink outline. Desktop selection uses a semibold label, subtle fill and a 20px inside tick. Use `aria-current="page"` and keep the focus ring distinct. The rail Sign out row has muted text, a quiet hover fill, and no selected state.
+
+## Part 4 task baseline
+
+The saved localhost browser permission prevented a 360px walkthrough. This inventory reflects reading order and controls in the pre-refresh source.
+
+| Task | First content before Part 4 | Required decision | Secondary content |
+| --- | --- | --- | --- |
+| Log a meal | Date, nutrition status and meal history controls shared the page with entry | Choose the entry source, amount and unit, then review and confirm | Historical meals and additional entry detail |
+| Record a workout set | Routine start and sections for every target surrounded the active session | Choose the set, enter measured values and save | Previous sets, instructions and completed workout history |
+| Find the next event | Week controls and day rows displayed the whole schedule with inline event actions | Read today's agenda or the next dated event | Availability editing and workout reschedule actions |
+| Review a meal plan | Filters and detailed estimate rows appeared together | Check the candidate, estimated cost, price coverage and next action | Ingredient breakdown, package arithmetic and saved shopping lists |
+
+The existing chart inventory includes weekly calorie and hydration series in Analytics, along with activity duration, weight and measurements in Activity and progress. Today retains the custom Day strip. The picker inventory includes food search, recipe and ingredient choices, routine/exercise selection and completed workout links. Short fixed selectors cover units, basis, visibility and preferences. Date, number and time fields use native inputs.
+
+### Card coverage
+
+Statuses below reflect source and automated rendering. Interactive verification is open for every row.
+
+| Page | Section | Card tone | Status |
+| --- | --- | --- | --- |
+| Redirect and route error | Root redirect, fallback and return action | Solid error | Source checked |
+| Sign in, register, verify, forgot, reset and resend | Auth form or session status, sample Day strip in disclosure | Solid, glass sample | Shared frame migrated |
+| Development preview | Connectivity and interaction check | Glass, solid | Migrated |
+| Today | Day strip, nutrition, hydration | Glass, glass, solid | Migrated |
+| Profile | Profile and preferences | Solid | Migrated |
+| Email notifications | Capability, optional preferences and quiet hours | Glass, solid | Migrated |
+| Meals | Entry, confirmation and history | Solid | Migrated |
+| Workouts | Active session, routine starter and history | Solid | Active and starter migrated. History disclosed |
+| Fit My Week | Agenda, proposal, availability and scheduling | Solid | Migrated |
+| Planner | Criteria, estimates, saved plans and shopping | Solid | Migrated |
+| Food | Search, results and disclosed manual entry | Solid | Migrated |
+| Recipes and pantry | Catalog lookup, recipe, lot and price controls and lists | Solid | Migrated |
+| Exercises | Exercise and routine catalog and editing | Solid | Migrated |
+| Activity and progress | Manual entry, history and dated charts | Solid, glass history | Migrated |
+| Weekly analytics | Week comparison and daily charts | Glass, solid | Migrated |
+| Goals | Hydration summary, goal progress and management | Glass, solid | Migrated |
+| Food recognition | Sample input, editable review and confirmation | Solid | Migrated |
+| Administration | Active section with table, review or editor | Solid | Migrated |
+
+The current canvas is solid. Chart token contrast against solid cards ranges from 5.85:1 to 7.18:1 light and 6.98:1 to 10.09:1 dark at full opacity.
+
+ChartCard shares a solid chart surface and coverage footer. Existing date gaps and recorded zeroes have text equivalents. Use the accessible Recharts layer, exact data and units in tooltips, and static series. Keep legends or explicit series labels visible and avoid communicating states by color alone.
+
+The shared Select and Combobox retain controlled values and form names where used. Search appears first in a native mobile sheet and in a Radix desktop popover. DropdownMenu groups secondary recipe actions. The More sheet and navigation are unchanged. Preserve 44px targets for primary controls. The existing dense Day strip markers remain 32px with their existing textual event equivalent.

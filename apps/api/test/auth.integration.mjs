@@ -16,20 +16,28 @@ if (!databaseUrl)
 const email = `phase06-${randomBytes(8).toString("hex")}@example.invalid`;
 const password = "SyntheticPhase06Password!1";
 const nextPassword = "SyntheticPhase06Password!2";
-const origin = "http://localhost:5173";
+const secureCookies = process.env.FIT_TEMPO_TEST_SECURE_COOKIES === "1";
+const origin = secureCookies ? "https://fit-tempo-staging.example.invalid" : "http://localhost:5173";
+const cookieName = (name) => (secureCookies ? "__Host-fitness_" : "fitness_dev_") + name;
 const db = new Pool({ connectionString: databaseUrl, max: 4 });
 const mailbox = createTestMailbox();
+let mailUnavailable = false;
 const app = express();
 app.use(express.json());
 app.use(
   "/api/v1/auth",
   createAuthRouter({
     db,
-    sender: mailbox,
+    sender: {
+      async send(message) {
+        if (mailUnavailable) throw new Error("Simulated mail provider outage");
+        await mailbox.send(message);
+      },
+    },
     jwtSecret: randomBytes(48).toString("base64url"),
     csrfSecret: randomBytes(48).toString("base64url"),
     frontendUrl: origin,
-    production: false,
+    production: secureCookies,
   }),
 );
 const server = createServer(app);
@@ -84,7 +92,7 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
           ? {
               origin: originHeader,
               "x-csrf-token":
-                csrf ?? client.cookies.get("fitness_dev_csrf") ?? "",
+                csrf ?? client.cookies.get(cookieName("csrf")) ?? "",
             }
           : {}),
         ...(body ? { "content-type": "application/json" } : {}),
@@ -92,6 +100,17 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
       body: body ? JSON.stringify(body) : undefined,
     });
     if (absorb) client.absorb(response);
+    const setCookies = response.headers.getSetCookie();
+    if (secureCookies) {
+      for (const header of setCookies) {
+        assert.match(header, /^__Host-fitness_(access|refresh|csrf)=/);
+        assert.match(header, /; Secure(?:;|$)/i);
+        assert.match(header, /; HttpOnly(?:;|$)/i);
+        assert.match(header, /; SameSite=Lax(?:;|$)/i);
+        assert.match(header, /; Path=\/(?:;|$)/i);
+        assert.doesNotMatch(header, /; Domain=/i);
+      }
+    }
     return { status: response.status, body: await response.json(), response };
   }
   try {
@@ -140,7 +159,16 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
       401,
     );
     assert.equal(mailbox.messages.length, 1);
-    const verify = new URL(mailbox.messages[0].url).searchParams.get("token");
+    const resend = await request("/resend-verification", { method: "POST", body: { email } });
+    const unknownResend = await request("/resend-verification", {
+      method: "POST",
+      body: { email: `unknown-${email}` },
+    });
+    assert.equal(resend.status, 202);
+    assert.equal(unknownResend.status, 202);
+    assert.deepEqual(resend.body, unknownResend.body);
+    assert.equal(mailbox.messages.length, 2);
+    const verify = new URL(mailbox.messages.at(-1).url).searchParams.get("token");
     assert.equal((await request("/verify-email")).status, 200); // scanner does not consume
     assert.equal(
       (
@@ -179,8 +207,8 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
       200,
     );
     assert.equal(
-      tab.cookies.get("fitness_dev_refresh"),
-      browser.cookies.get("fitness_dev_refresh"),
+      tab.cookies.get(cookieName("refresh")),
+      browser.cookies.get(cookieName("refresh")),
     );
     assert.equal(
       (
@@ -192,12 +220,14 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
       ).status,
       200,
     );
-    browser.cookies.delete("fitness_dev_access"); // expired access with valid refresh
+    browser.cookies.delete(cookieName("access")); // expired access with valid refresh
     assert.equal((await request("/csrf", { client: browser })).status, 200);
-    assert.equal(
-      (await request("/logout", { method: "POST", client: browser })).status,
-      200,
-    );
+    const logout = await request("/logout", { method: "POST", client: browser });
+    assert.equal(logout.status, 200);
+    for (const name of ["access", "refresh", "csrf"]) {
+      assert.ok(logout.response.headers.getSetCookie().some(header => header.startsWith(`${cookieName(name)}=;`)));
+      assert.equal(browser.cookies.has(cookieName(name)), false);
+    }
     assert.equal((await request("/me", { client: tab })).status, 401); // copied access is rejected immediately
     assert.equal(
       (await request("/refresh", { method: "POST", client: tab })).status,
@@ -205,20 +235,18 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
     );
 
     assert.equal((await request("/csrf")).status, 200);
-    assert.equal(
-      (
-        await request("/forgot-password", {
-          method: "POST",
-          body: { email: "absent@example.invalid" },
-        })
-      ).status,
-      202,
-    );
-    assert.equal(
-      (await request("/forgot-password", { method: "POST", body: { email } }))
-        .status,
-      202,
-    );
+    const recover = email => request("/forgot-password", { method: "POST", body: { email } });
+    const absent = await recover("absent@example.invalid");
+    mailUnavailable = true;
+    const failed = await recover(email);
+    mailUnavailable = false;
+    const known = await recover(email);
+    for (const recovery of [absent, failed, known]) {
+      assert.equal(recovery.status, 202);
+      assert.deepEqual(recovery.body, absent.body);
+    }
+    assert.equal(mailbox.messages.length, 3);
+    assert.equal(mailbox.messages.at(-1).to, email);
     const reset = new URL(mailbox.messages.at(-1).url).searchParams.get(
       "token",
     );
@@ -242,7 +270,7 @@ test("Phase 06 cookie auth, recovery, refresh races and revocation", async () =>
       ).status,
       400,
     );
-    assert.ok(browser.cookies.get("fitness_dev_csrf")); // invalid replay cannot clear a valid CSRF cookie
+    assert.ok(browser.cookies.get(cookieName("csrf"))); // invalid replay cannot clear a valid CSRF cookie
     assert.equal(
       (await request("/login", { method: "POST", body: { email, password } }))
         .status,

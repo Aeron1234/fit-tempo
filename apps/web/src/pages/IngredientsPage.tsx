@@ -5,12 +5,15 @@ import {
   foodLookupSchema, foodUnitSchema, ingredientPricesResponseSchema, ingredientPriceWriteSchema, mealWriteSchema,
   pantryResponseSchema, pantryWriteSchema, priceCurrencySchema, recipeEditSchema, recipesResponseSchema, recipeWriteSchema,
 } from '@fit-tempo/contracts';
+import { GlassPanel } from '@/components/shared/GlassPanel';
+import { ValuePicker } from '@/components/shared/ValuePicker';
 import { UnrecordedHatch } from '@/components/shared/UnrecordedHatch';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import type { Session } from '@/lib/api/session';
 
 const input = 'tempo-field w-full min-w-0';
-const formPanel = 'tempo-form min-w-0 space-y-4';
+const formPanel = 'min-w-0 space-y-4';
 const fieldLabel = 'grid min-w-0 gap-1.5 text-sm font-semibold';
 const numberInput = `${input} text-right tempo-tabular`;
 const issue = 'flex items-start gap-2 text-sm text-destructive';
@@ -22,9 +25,9 @@ type Lot = ReturnType<typeof pantryResponseSchema.parse>['data']['items'][number
 type Action = { method: 'POST' | 'PATCH' | 'DELETE'; path: string; body: object };
 const field = (data: FormData, name: string) => String(data.get(name) ?? '').trim();
 const decimal = (data: FormData, name: string) => field(data, name).replace(/(\.\d*?[1-9])0+$|\.0+$/, '$1');
-const unitOptions = foodUnitSchema.options.map(unit => <option key={unit}>{unit}</option>);
+const unitOptions = foodUnitSchema.options.map(value => ({ value, label: value }));
 
-function FoodPicker({ session, owner, select }: { session: Session; owner: string; select: (food: FoodRef) => void }) {
+function FoodPicker({ session, owner, select, current, disabled }: { session: Session; owner: string; select: (food: FoodRef) => void; current: FoodRef | null; disabled: boolean }) {
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   const results = useQuery({
@@ -33,28 +36,25 @@ function FoodPicker({ session, owner, select }: { session: Session; owner: strin
     queryFn: ({ signal }) => session.requestPrivate(`/foods?q=${encodeURIComponent(submitted)}`, foodLookupSchema.parse, signal),
   });
   const foods = results.data?.data.filter(food => food.id !== null && food.revision !== undefined);
-  return <form className={formPanel} onSubmit={event => {
-    event.preventDefault();
-    setSubmitted(query.trim());
-  }}>
-    <label className={fieldLabel}>Find a saved food
-      <input type="search" className={input} value={query} minLength={2} maxLength={80} required onChange={event => setQuery(event.target.value)} />
-    </label>
-    <Button type="submit" variant="outline">Search</Button>
-    {results.isFetching && <p className="text-sm text-muted-foreground" role="status">Searching saved foods.</p>}
-    {results.isError && <p className={issue} role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Food search is unavailable.</p>}
-    {foods?.length === 0 && <div className="space-y-3">
-      <UnrecordedHatch />
-      <p role="status">No saved foods found. You can add a food in the food catalog.</p>
-    </div>}
-    {Boolean(foods?.length) && <div className="flex flex-wrap gap-2">{foods?.map(food => <Button variant="outline" key={food.id} type="button" onClick={() => {
-      if (food.id !== null && food.revision !== undefined) select({
-        foodId: food.id, foodName: food.name, nutrientRevision: food.revision,
-      });
+  return <GlassPanel title="Saved foods" tone="solid"><ValuePicker label="Find a saved food" placeholder="Choose a saved food"
+    searchable value={current?.foodId ?? ''} selectedLabel={current?.foodName} disabled={disabled}
+    search={query} onSearchChange={setQuery} loading={results.isFetching}
+    onSearchSubmit={draft => {
+      const term = draft.trim();
+      if (term.length < 2) return;
+      if (term === submitted) void results.refetch();
+      else setSubmitted(term);
+    }}
+    error={results.isError ? 'Food search is unavailable.' : undefined}
+    emptyMessage={submitted.length < 2 ? 'Enter at least two characters and search.' : 'No saved foods found. You can add a food in the food catalog.'}
+    options={(foods ?? []).flatMap(food => food.id ? [{ value: food.id, label: food.name }] : [])}
+    onValueChange={id => {
+      const food = foods?.find(item => item.id === id);
+      if (!food || food.revision === undefined) return;
+      select({ foodId: id, foodName: food.name, nutrientRevision: food.revision });
       setQuery('');
       setSubmitted('');
-    }}>{food.name}</Button>)}</div>}
-  </form>;
+    }} /></GlassPanel>;
 }
 
 function RecipeForm({ value, food, busy, submit }: {
@@ -80,7 +80,7 @@ function RecipeForm({ value, food, busy, submit }: {
     setError('');
     submit({ method: value ? 'PATCH' : 'POST', path: value ? `/me/recipes/${value.id}` : '/me/recipes', body: parsed.data });
   }
-  return <form className={formPanel} onSubmit={onSubmit}>
+  return <GlassPanel tone="solid"><form className={formPanel} onSubmit={onSubmit}>
     <h2 className="text-xl font-semibold">{value ? 'Edit recipe' : 'Add a recipe'}</h2>
     <fieldset className="grid gap-3 sm:grid-cols-2" disabled={busy}>
       <label className={fieldLabel}>Name<input name="name" className={input} required maxLength={200} defaultValue={value?.name} /></label>
@@ -102,8 +102,8 @@ function RecipeForm({ value, food, busy, submit }: {
         <span className="min-w-0 break-words font-medium">{item.foodName}</span>
         <label className={fieldLabel}>Quantity<input className={numberInput} inputMode="decimal" value={item.quantity} onChange={event => setItems(current =>
           current.map((entry, index) => index === i ? { ...entry, quantity: event.target.value } : entry))} /></label>
-        <label className={fieldLabel}>Unit<select className={input} value={item.unit} onChange={event =>
-          setItems(current => current.map((entry, index) => index === i ? { ...entry, unit: foodUnitSchema.parse(event.target.value) } : entry))}>{unitOptions}</select></label>
+        <ValuePicker label="Unit" value={item.unit} disabled={busy} options={unitOptions}
+          onValueChange={value => setItems(current => current.map((entry, index) => index === i ? { ...entry, unit: foodUnitSchema.parse(value) } : entry))} />
         <Button type="button" variant="outline" className="h-auto whitespace-normal break-words" onClick={() => setItems(current => current.filter((_item, index) => index !== i))}>Remove {item.foodName}</Button>
       </div>)}
       <Button type="button" variant="outline" disabled={!food || items.length >= 30} onClick={() => {
@@ -113,15 +113,16 @@ function RecipeForm({ value, food, busy, submit }: {
     <p className="text-sm text-muted-foreground">Volume and count are kept in the entered unit. Gram conversions require a measured basis for the food.</p>
     {error && <p className={issue} role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />{error}</p>}
     <Button disabled={busy} type="submit">Save recipe</Button>
-  </form>;
+  </form></GlassPanel>;
 }
 
 function PantryForm({ lot, food, revision, submit, busy }: {
   lot: Lot | null; food: FoodRef | null; revision: number; submit: (action: Action) => void; busy: boolean;
 }) {
+  const [unit, setUnit] = useState<string>(lot?.unit ?? 'g');
   const [error, setError] = useState('');
   const selected = lot ?? food;
-  return <form className={formPanel} onSubmit={event => {
+  return <GlassPanel tone="solid"><form className={formPanel} onSubmit={event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const parsed = pantryWriteSchema.safeParse({
@@ -136,16 +137,19 @@ function PantryForm({ lot, food, revision, submit, busy }: {
     <p>{selected?.foodName ?? 'Choose a saved food.'}</p>
     <fieldset disabled={busy} className="grid gap-3 sm:grid-cols-3">
       <label className={fieldLabel}>Quantity<input className={numberInput} name="quantity" required inputMode="decimal" defaultValue={lot?.quantity ?? '1'} /></label>
-      <label className={fieldLabel}>Unit<select className={input} name="unit" defaultValue={lot?.unit ?? 'g'}>{unitOptions}</select></label>
+      <ValuePicker label="Unit" name="unit" value={unit} onValueChange={setUnit} options={unitOptions} disabled={busy} />
       <label className={fieldLabel}>Expiry (optional)<input type="date" className={input} name="expires" defaultValue={lot?.expiresOn ?? ''} /></label>
     </fieldset>
     {error && <p className={issue} role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />{error}</p>}
     <Button disabled={!selected || busy} type="submit">Save pantry lot</Button>
-  </form>;
+  </form></GlassPanel>;
 }
 function PriceForm({ food, busy, submit }: { food: FoodRef | null; busy: boolean; submit: (action: Action) => void }) {
+  const [unit, setUnit] = useState<string>('g');
+  const [currency, setCurrency] = useState<string>(priceCurrencySchema.options[0]);
+  const [priceBasis, setPriceBasis] = useState('unit');
   const [error, setError] = useState('');
-  return <form className={formPanel} onSubmit={event => {
+  return <GlassPanel tone="solid"><form className={formPanel} onSubmit={event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const parsed = ingredientPriceWriteSchema.safeParse({
@@ -161,22 +165,23 @@ function PriceForm({ food, busy, submit }: { food: FoodRef | null; busy: boolean
     <p>{food?.foodName ?? 'Choose a saved food.'}</p>
     <fieldset disabled={busy} className="grid gap-3 sm:grid-cols-2">
       <label className={fieldLabel}>Price (blank if unknown)<input className={numberInput} name="amount" inputMode="decimal" /></label>
-      <label className={fieldLabel}>Currency<select className={input} name="currency">
-        {priceCurrencySchema.options.map(currency => <option key={currency}>{currency}</option>)}
-      </select></label>
-      <label className={fieldLabel}>Price basis<select className={input} name="basis"><option value="unit">Unit</option><option value="package">Package</option></select></label>
+      <ValuePicker label="Currency" name="currency" value={currency} onValueChange={setCurrency} disabled={busy}
+        options={priceCurrencySchema.options.map(value => ({ value, label: value }))} />
+      <ValuePicker label="Price basis" name="basis" value={priceBasis} onValueChange={setPriceBasis} disabled={busy}
+        options={[{ value: 'unit', label: 'Unit' }, { value: 'package', label: 'Package' }]} />
       <label className={fieldLabel}>Quantity per unit or package<input className={numberInput} name="quantity" inputMode="decimal" defaultValue="1" required /></label>
-      <label className={fieldLabel}>Quantity unit<select className={input} name="unit">{unitOptions}</select></label>
+      <ValuePicker label="Quantity unit" name="unit" value={unit} onValueChange={setUnit} options={unitOptions} disabled={busy} />
       <label className={fieldLabel}>Store (optional)<input className={input} name="store" maxLength={120} /></label>
     </fieldset>
     {error && <p className={issue} role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />{error}</p>}
     <Button disabled={!food || busy} type="submit">Save price</Button>
-  </form>;
+  </form></GlassPanel>;
 }
 
 function RecipeLog({ recipe, busy, submit }: { recipe: Recipe; busy: boolean; submit: (action: Action) => void }) {
+  const [mealType, setMealType] = useState('lunch');
   const [error, setError] = useState('');
-  return <form className={formPanel} onSubmit={event => {
+  return <GlassPanel tone="solid"><form className={formPanel} onSubmit={event => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const parsed = mealWriteSchema.safeParse({
@@ -188,13 +193,12 @@ function RecipeLog({ recipe, busy, submit }: { recipe: Recipe; busy: boolean; su
   }}>
     <h2 className="text-lg font-semibold">Log {recipe.name} now</h2>
     <label className={fieldLabel}>Servings eaten<input className={numberInput} name="portion" inputMode="decimal" defaultValue="1" required /></label>
-    <label className={fieldLabel}>Meal<select className={input} name="mealType" defaultValue="lunch">
-      {['breakfast', 'lunch', 'dinner', 'snack'].map(type => <option key={type}>{type}</option>)}
-    </select></label>
+    <ValuePicker label="Meal" name="mealType" value={mealType} onValueChange={setMealType} disabled={busy}
+      options={['breakfast', 'lunch', 'dinner', 'snack'].map(value => ({ value, label: value }))} />
     <p className="text-sm text-muted-foreground">Confirming saves the recipe and nutrient snapshot to your meal history.</p>
     {error && <p className={issue} role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />{error}</p>}
     <Button type="submit" disabled={busy}>Confirm meal</Button>
-  </form>;
+  </form></GlassPanel>;
 }
 
 const sections = { recipes: 'Recipes', pantry: 'Pantry', prices: 'Prices' } as const;
@@ -257,7 +261,7 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
   }
   const busy = write.isPending || pending !== null;
   const NoticeIcon = write.isError ? AlertCircle : Check;
-  return <div className="min-w-0 space-y-7">
+  return <div className="tempo-card-grid min-w-0">
     <h1 className="text-3xl font-semibold tracking-tight">Recipes, pantry and prices</h1>
     <nav aria-label="Ingredient tools" className="flex flex-wrap gap-2">
       {(Object.keys(sections) as Section[]).map(key => <Button key={key} type="button" aria-pressed={section === key}
@@ -277,13 +281,14 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
       <p className={issue}><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Could not load {sections[section].toLowerCase()}.</p>
       <Button type="button" variant="outline" onClick={() => void query.refetch()}>Try again</Button>
     </div>}
-    <FoodPicker key={section} session={session} owner={owner} select={setFood} />
+    <FoodPicker key={section} session={session} owner={owner} select={setFood} current={food} disabled={busy} />
     {section === 'recipes' && <>
       <RecipeForm key={recipe?.id ?? formVersion} value={recipe} food={food} busy={busy} submit={submit} />
       {recipe && <Button type="button" variant="outline" disabled={busy} onClick={() => editRecipe(null)}>Cancel editing</Button>}
       {logging && <RecipeLog key={logging.id} recipe={logging} busy={busy} submit={submit} />}
-      {recipes.data?.data.length === 0 && <div className="tempo-section space-y-3"><UnrecordedHatch /><p role="status">No recipes saved yet.</p></div>}
-      {recipes.data?.data.map(row => <article key={row.id} className="tempo-section min-w-0 space-y-3">
+      <GlassPanel title="Saved recipes" tone="solid">
+      {recipes.data?.data.length === 0 && <div className="space-y-3"><UnrecordedHatch /><p role="status">No recipes saved yet.</p></div>}
+      {recipes.data?.data.map(row => <article key={row.id} className="min-w-0 space-y-3 border-t border-border py-3">
         <h2 className="text-xl font-semibold">{row.name}</h2>
         <dl className="tempo-ledger grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 text-sm">
           <dt>Servings</dt><dd className="tempo-tabular text-right">{row.servings}</dd>
@@ -296,20 +301,25 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
         {row.steps.length > 0 && <ol className="list-decimal pl-5">{row.steps.map((step, index) => <li key={index}>{step}</li>)}</ol>}
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" disabled={busy} onClick={() => setLogging(row)}>Log a portion</Button>
-          {row.editable && <>
-            <Button type="button" variant="outline" disabled={busy} onClick={() => editRecipe(row)}>Edit</Button>
-            <Button type="button" variant="outline" disabled={busy} onClick={() => {
+          {row.editable && <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button type="button" variant="outline" disabled={busy} aria-label={`Actions for ${row.name}`}>Actions</Button></DropdownMenuTrigger>
+            <DropdownMenuContent>
+            <DropdownMenuItem onSelect={() => editRecipe(row)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => {
               if (window.confirm(`Archive ${row.name}?`)) submit({ method: 'DELETE', path: `/me/recipes/${row.id}`, body: { expectedRevision: row.revision } });
-            }}>Archive</Button>
-          </>}
+            }}>Archive</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>}
         </div>
       </article>)}
+      </GlassPanel>
     </>}
     {section === 'pantry' && revision !== undefined && <>
       <PantryForm key={lot?.value.id ?? formVersion} lot={lot?.value ?? null} food={food} revision={lot?.revision ?? revision} busy={busy} submit={submit} />
       {lot && <Button type="button" variant="outline" disabled={busy} onClick={() => editLot(null)}>Cancel editing</Button>}
-      {pantry.data?.data.items.length === 0 && <div className="tempo-section space-y-3"><UnrecordedHatch /><p role="status">No pantry lots saved yet.</p></div>}
-      {pantry.data?.data.items.map(row => <article key={row.id} className="tempo-section min-w-0 space-y-3">
+      <GlassPanel title="Pantry lots" tone="solid">
+      {pantry.data?.data.items.length === 0 && <div className="space-y-3"><UnrecordedHatch /><p role="status">No pantry lots saved yet.</p></div>}
+      {pantry.data?.data.items.map(row => <article key={row.id} className="min-w-0 space-y-3 border-t border-border py-3">
         <h2 className="text-lg font-semibold">{row.foodName}</h2>
         <dl className="tempo-ledger grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 text-sm">
           <dt>Quantity</dt><dd className="tempo-tabular text-right">{row.quantity} {row.unit}</dd>
@@ -323,11 +333,13 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
           }}>Remove</Button>
         </div>
       </article>)}
+      </GlassPanel>
     </>}
     {section === 'prices' && <>
       <PriceForm key={formVersion} food={food} busy={busy} submit={submit} />
-      {prices.data?.data.length === 0 && <div className="tempo-section space-y-3"><UnrecordedHatch /><p role="status">No prices recorded. Ingredient prices are unknown.</p></div>}
-      {prices.data?.data.map(row => <article key={row.id} className="tempo-section min-w-0 space-y-3">
+      <GlassPanel title="Recorded prices" tone="solid">
+      {prices.data?.data.length === 0 && <div className="space-y-3"><UnrecordedHatch /><p role="status">No prices recorded. Ingredient prices are unknown.</p></div>}
+      {prices.data?.data.map(row => <article key={row.id} className="min-w-0 space-y-3 border-t border-border py-3">
         <h2 className="text-lg font-semibold">{row.foodName}</h2>
         <dl className="tempo-ledger grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 text-sm">
           <dt>Price per {row.priceBasis} ({row.unitQuantity} {row.unit})</dt>
@@ -336,6 +348,7 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
           <dt>Recorded date</dt><dd className="tempo-tabular text-right">{row.recordedAt.slice(0, 10)}</dd>
         </dl>
       </article>)}
+      </GlassPanel>
     </>}
   </div>;
 }

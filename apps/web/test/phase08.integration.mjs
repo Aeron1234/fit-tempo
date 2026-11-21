@@ -6,11 +6,66 @@ import { createElement as h } from 'react'
 import { renderToString } from 'react-dom/server'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { createSession } from '../src/lib/api/session.ts'
-import { ProtectedLayout } from '../src/pages/Phase08.tsx'
+import { ProtectedLayout, RegisterPage, ResendVerificationPage, SignInPage, VerifyEmailPage } from '../src/pages/Phase08.tsx'
 
 const deferred = () => Promise.withResolvers()
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { 'Content-Type': 'application/json' },
+})
+
+test('verification landing requires a usable link and an explicit confirmation', () => {
+  const session = { verifyEmail: () => assert.fail('Rendering must never submit a verification token') }
+  const render = (path) => renderToString(h(MemoryRouter, { initialEntries: [path] }, h(VerifyEmailPage, { session })))
+  const missing = render('/verify-email')
+  assert.match(missing, /class="tempo-canvas account-layout"/)
+  assert.match(missing, /href="\/resend-verification"[^>]*>Request a new link/)
+  assert.doesNotMatch(missing, />Verify email<\/button>/)
+  const token = 'v'.repeat(40)
+  const linked = render(`/verify-email?token=${token}`)
+  assert.match(linked, />Verify email<\/button>/)
+  assert.ok(!linked.includes(token))
+})
+
+test('verification resend uses the shared account layout with an email-only form', () => {
+  const snapshot = { status: 'anonymous' }
+  const session = { subscribe: () => () => {}, getSnapshot: () => snapshot }
+  const html = renderToString(h(MemoryRouter, null, h(ResendVerificationPage, { session })))
+  assert.match(html, /class="tempo-canvas account-layout"/)
+  assert.match(html, /autocomplete="email"/i)
+  assert.match(html, /role="status"/)
+  assert.match(html, /type="submit">Send verification link/)
+  assert.doesNotMatch(html, /type="password"/)
+})
+
+test('account routes render branded forms and a shortcut past the feature carousel', () => {
+  const snapshot = { status: 'anonymous' }
+  const session = { subscribe: () => () => {}, getSnapshot: () => snapshot }
+  for (const [path, Page, heading, passwordHint, switchPath] of [
+    ['/sign-in', SignInPage, 'Sign in', 'current-password', '/register'],
+    ['/register', RegisterPage, 'Create your account', 'new-password', '/sign-in'],
+  ]) {
+    const html = renderToString(h(MemoryRouter, { initialEntries: [path] },
+      h(Routes, null, h(Route, { path, element: h(Page, { session }) })),
+    ))
+    assert.match(html, new RegExp(`id="account-heading"[^>]*>${heading}</h1>`))
+    assert.match(html, /src="\/fit-tempo-mark.png"/)
+    assert.match(html, /for="account-email">Email address/)
+    assert.match(html, /autocomplete="username"/i)
+    assert.match(html, new RegExp(`autocomplete="${passwordHint}"`, 'i'))
+    assert.ok(html.includes(`href="${switchPath}"`))
+    assert.match(html, /aria-label="Previous feature"/)
+    assert.match(html, /aria-label="Next feature"/)
+    assert.match(html, /aria-label="Pause slideshow"/)
+    for (const photo of ['pantry', 'runner', 'tracking']) {
+      assert.ok(html.includes(`src="/account-${photo}.jpg"`))
+    }
+    assert.match(html, /data-active="true" src="\/account-pantry.jpg"/)
+    assert.match(html, /href="#account-heading".*aria-roledescription="carousel".*<form/)
+    if (path === '/sign-in') {
+      assert.match(html, /id="account-password".*href="\/forgot-password".*type="submit"/)
+      assert.match(html, /href="\/resend-verification"/)
+    }
+  }
 })
 
 function whenSession(session, predicate) {

@@ -22,6 +22,16 @@ type Options = {
   manualFood?: ReturnType<typeof Router>;
   meals?: ReturnType<typeof Router>;
   ingredients?: ReturnType<typeof Router>;
+  planner?: ReturnType<typeof Router>;
+  exercises?: ReturnType<typeof Router>;
+  workouts?: ReturnType<typeof Router>;
+  schedule?: ReturnType<typeof Router>;
+  activity?: ReturnType<typeof Router>;
+  hydration?: ReturnType<typeof Router>;
+  analytics?: ReturnType<typeof Router>;
+  admin?: ReturnType<typeof Router>;
+  notifications?: ReturnType<typeof Router>;
+  foodRecognition?: ReturnType<typeof Router>;
 };
 type Identity = { id: string; sessionId: string; role: 'trainee' | 'admin' };
 const credentials = z.strictObject({ email: z.email().max(320), password: z.string().min(12).max(256) });
@@ -139,8 +149,11 @@ export function createAuthRouter(options: Options) {
     const hash = await argon2.hash(parsed.data.password, { type: argon2.argon2id });
     const id = randomUUID();
     const created = await options.db.query(`INSERT INTO users(id,email,password_hash,role_code)
-      VALUES ($1,$2,$3,'trainee') ON CONFLICT(email) DO NOTHING RETURNING id`, [id, email, hash]);
-    if (created.rowCount) await sendPurpose(id, email, 'verify_email');
+      VALUES ($1,$2,$3,'trainee') ON CONFLICT(email) DO NOTHING RETURNING id,email`, [id, email, hash]);
+    if (created.rows[0]) {
+      try { await sendPurpose(created.rows[0].id, created.rows[0].email, 'verify_email'); }
+      catch { /* Keep the generic response. An explicit resend can issue another link. */ }
+    }
     return res.status(202).json(generic);
   });
   router.post('/resend-verification', ...(options.limits ? [options.limits.emailMinute, options.limits.emailHour] : []), csrf, async (req, res) => {
@@ -178,7 +191,14 @@ export function createAuthRouter(options: Options) {
     const user = found.rows[0];
     if (!user || !(await argon2.verify(user.password_hash, parsed.data.password)))
       return error(res, 401, 'UNAUTHENTICATED', 'Invalid credentials.');
-    const session = await transaction((client) => issueSession(client, user.id));
+    const session = await transaction(async client => {
+      const eligible = await client.query(
+        'SELECT id FROM users WHERE id=$1 AND active AND verified_at IS NOT NULL AND password_hash=$2 FOR UPDATE',
+        [user.id, user.password_hash],
+      );
+      return eligible.rowCount ? issueSession(client, user.id) : null;
+    });
+    if (!session) return error(res, 401, 'UNAUTHENTICATED', 'Invalid credentials.');
     setSession(res, await signAccess(user.id, session.sid, options.jwtSecret), session.refresh, session.sid);
     return res.json({ data: { authenticated: true } });
   });
@@ -265,6 +285,97 @@ export function createAuthRouter(options: Options) {
       if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
       next();
     }, options.ingredients);
+  }
+  if (options.planner) {
+    router.use('/phase13', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.planner);
+  }
+  if (options.exercises) {
+    router.use('/phase14', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.exercises);
+  }
+  if (options.workouts) {
+    router.use('/phase15', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.workouts);
+  }
+  if (options.schedule) {
+    router.use('/phase16', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.schedule);
+  }
+  if (options.activity) {
+    router.use('/phase17', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.activity);
+  }
+  if (options.hydration) {
+    router.use('/phase18', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.hydration);
+  }
+  if (options.foodRecognition) {
+    router.use('/phase19', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.foodRecognition);
+  }
+  if (options.analytics) {
+    router.use('/phase20', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.analytics);
+  }
+  if (options.notifications) {
+    router.use('/phase22/notification-preferences', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.notifications);
+  }
+  if (options.admin) {
+    router.use('/phase24', async (req, res, next) => {
+      const identity = await current(req);
+      if (!identity) return error(res, 401, 'UNAUTHENTICATED', 'Sign in required.');
+      if (identity.role !== 'admin') return error(res, 403, 'FORBIDDEN', 'Admin role required.');
+      res.locals.userId = identity.id;
+      if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return csrf(req, res, next);
+      next();
+    }, options.admin);
   }
   router.get('/admin-check', async (req, res) => {
     const identity = await current(req);

@@ -1,8 +1,10 @@
 import { Router, type Response } from 'express';
 import type { Pool } from 'pg';
 import { z } from 'zod';
+import { readNutritionDays } from './nutrition-metrics.js';
+import { invalidateNotificationTimeZone } from './notifications.js';
 import {
-  aggregateDay, dashboardFixtures, decimalSchema, localDateAt, localDateSchema,
+  aggregateDay, dashboardFixtures, localDateAt, localDateSchema,
   positiveDecimalSchema, syntheticDashboardDates, timeZoneSchema,
 } from '@fit-tempo/contracts';
 
@@ -29,11 +31,6 @@ const profileColumns = 'display_name AS "displayName", trim_scale(height_cm)::te
 
 function invalid(res: Response, message: string) {
   return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message, requestId: res.locals.requestId } });
-}
-
-function nutrient(value: unknown) {
-  const result = decimalSchema.safeParse(value);
-  return result.success ? result.data : null;
 }
 
 export function createProfileRouter(db: Pool, synthetic: boolean) {
@@ -73,7 +70,18 @@ export function createProfileRouter(db: Pool, synthetic: boolean) {
     const parsed = preferencesPatch.safeParse(req.body);
     if (!parsed.success) return invalid(res, 'Enter a supported time zone, mass unit, or theme.');
     const { timeZone, massUnit, theme } = parsed.data;
-    const result = await db.query<Preferences>(`
+    const owner: string = res.locals.userId;
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      let oldTimeZone: string | undefined;
+      if (timeZone !== undefined) {
+        await client.query('INSERT INTO schedule_revisions (user_id) VALUES ($1) ON CONFLICT DO NOTHING', [owner]);
+        await client.query('SELECT revision FROM schedule_revisions WHERE user_id=$1 FOR UPDATE', [owner]);
+        const previous = await client.query<Preferences>(`SELECT ${preferencesColumns} FROM user_preferences WHERE user_id=$1`, [owner]);
+        oldTimeZone = (previous.rows[0] ?? defaultPreferences).timeZone;
+      }
+      const result = await client.query<Preferences>(`
       INSERT INTO user_preferences (user_id, time_zone, mass_unit, theme)
       VALUES ($1, COALESCE($2, 'Asia/Manila'), COALESCE($3, 'kg'), COALESCE($4, 'system'))
       ON CONFLICT (user_id) DO UPDATE SET
@@ -82,8 +90,19 @@ export function createProfileRouter(db: Pool, synthetic: boolean) {
         theme = COALESCE($4, user_preferences.theme),
         updated_at = now()
       RETURNING ${preferencesColumns}
-    `, [res.locals.userId, timeZone ?? null, massUnit ?? null, theme ?? null]);
-    return res.json({ data: result.rows[0] });
+      `, [owner, timeZone ?? null, massUnit ?? null, theme ?? null]);
+      if (timeZone !== undefined && oldTimeZone !== timeZone) {
+        await client.query('UPDATE schedule_revisions SET revision=revision+1, updated_at=now() WHERE user_id=$1', [owner]);
+        await invalidateNotificationTimeZone(client, owner);
+      }
+      await client.query('COMMIT');
+      return res.json({ data: result.rows[0] });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   });
 
   router.get('/dashboard', async (req, res) => {
@@ -99,39 +118,8 @@ export function createProfileRouter(db: Pool, synthetic: boolean) {
 
     const preferences = await readPreferences(userId);
     const date = parsed.data.date ?? localDateAt(new Date().toISOString(), preferences.timeZone);
-    const result = await db.query<{
-      status: 'unrecorded' | 'partial' | 'complete' | null;
-      entry_count: number | null;
-      timezone: string | null;
-      meal_id: string | null;
-      item_id: string | null;
-      calories: unknown;
-      protein: unknown;
-    }>(`
-      WITH scope AS (SELECT $1::uuid AS owner, $2::date AS day)
-      SELECT status.state AS status, status.entry_count,
-        COALESCE(status.recorded_time_zone, meal.recorded_time_zone) AS timezone,
-        meal.id AS meal_id, item.id AS item_id,
-        item.nutrition_snapshot #> '{consumedNutrients,energyKcal}' AS calories,
-        item.nutrition_snapshot #> '{consumedNutrients,proteinG}' AS protein
-      FROM scope
-      LEFT JOIN daily_tracking_status status ON status.user_id = scope.owner
-        AND status.recorded_local_date = scope.day AND status.category = 'nutrition'
-      LEFT JOIN meals meal ON meal.user_id = scope.owner AND meal.recorded_local_date = scope.day
-        AND meal.deleted_at IS NULL
-      LEFT JOIN meal_items item ON item.meal_id = meal.id
-      ORDER BY meal.occurred_at, meal.id, item.id
-    `, [userId, date]);
-    const first = result.rows[0];
-    const items = result.rows.filter(row => row.item_id).map(row => ({
-      calories: nutrient(row.calories),
-      protein: nutrient(row.protein),
-    }));
-    const hasEntries = Boolean(first?.meal_id || first?.entry_count);
-    const status = first?.status === 'complete' ? 'complete' : hasEntries ? 'partial' : 'unrecorded';
-    return res.json({ data: aggregateDay({
-      date, timezone: first?.timezone ?? preferences.timeZone, status, items, hasEntries,
-    }), meta });
+    const [day] = await readNutritionDays(db, userId, date, date, preferences.timeZone);
+    return res.json({ data: day, meta });
   });
 
   return router;
