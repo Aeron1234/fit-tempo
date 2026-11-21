@@ -6,7 +6,8 @@ import { createElement as h } from 'react'
 import { renderToString } from 'react-dom/server'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { createSession } from '../src/lib/api/session.ts'
-import { ProtectedLayout, RegisterPage, ResendVerificationPage, SignInPage, VerifyEmailPage } from '../src/pages/Phase08.tsx'
+import { ForgotPasswordPage, ProtectedLayout, RegisterPage, ResendVerificationPage, ResetPasswordPage, SignInPage, VerifyEmailPage } from '../src/pages/Phase08.tsx'
+import { RouteErrorPage } from '../src/pages/RouteErrorPage.tsx'
 
 const deferred = () => Promise.withResolvers()
 const json = (data, status = 200) => new Response(JSON.stringify(data), {
@@ -197,6 +198,24 @@ test('protected layout withholds private content until a session is confirmed', 
   for (const status of ['checking', 'anonymous', 'error']) {
     assert.doesNotMatch(render({ status }), /Private fixture content/)
   }
+  const pending = render({ status: 'checking' })
+  const failure = render({ status: 'error' })
+  assert.match(pending, /role="status".*Checking your session/)
+  assert.match(pending, /motion-safe:animate-spin/)
+  assert.match(failure, />Try again<\/button>/)
+  assert.match(failure, /href="\/sign-in"/)
+  assert.doesNotMatch(pending + failure, /Preview a sample day/)
   assert.match(render({ status: 'authenticated', user: { id: 'owner', role: 'trainee' } }),
     /Private fixture content/)
+})
+
+test('recovery routes provide the appropriate next action', () => {
+  const snapshot = { status: 'anonymous' }
+  const session = { subscribe: () => () => {}, getSnapshot: () => snapshot }
+  const render = (Page, props, path) => renderToString(h(MemoryRouter, { initialEntries: [path] }, h(Page, props)))
+  assert.match(render(ForgotPasswordPage, { session }, '/forgot-password'), /account-layout.*Send reset link/)
+  assert.match(render(ResetPasswordPage, { session }, '/reset-password'), /Reset link needed.*href="\/forgot-password"/)
+  assert.match(render(ResetPasswordPage, { session }, `/reset-password?token=${'r'.repeat(40)}`), /account-layout.*Update password/)
+  assert.match(render(RouteErrorPage, { notFound: true }, '/missing'), /Page not found.*Return to Fit Tempo/)
+  assert.match(render(RouteErrorPage, {}, '/app'), /Reload page.*Return to Fit Tempo/)
 })

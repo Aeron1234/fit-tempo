@@ -4,6 +4,8 @@ Updated November 21, 2026 (Asia/Manila).
 
 ## Sign-in and registration refresh
 
+The legacy authentication frame and its sample-day disclosure were removed. Session checking, session recovery, missing reset links, and full-page route errors now use a shared status page. Forgot-password and password reset forms use the account layout. Session initialization, protected content gating and token handling keep their existing behavior. All 33 web checks passed. The direct staging API and canonical web-origin health checks both returned HTTP 200. Interactive verification of the refreshed screens remains open.
+
 The email verification landing page shares the branded account layout. A usable link still requires explicit confirmation, success leads to sign-in, and visitors without a usable link can request a new one.
 
 Resend verification uses the shared account layout and announces pending and received requests. Public responses stay generic. Existing redacted API diagnostics now include the provider HTTP status when available. Build, lint, 31 web checks, disposable PostgreSQL resend through the test mailbox and mocked EmailJS checks passed. Live inbox delivery remains unverified.

@@ -1,6 +1,6 @@
 import { TempoCanvas } from '@/components/shared/TempoCanvas';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { CircleAlert, CircleCheck, LoaderCircle, WifiOff } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -9,38 +9,11 @@ import { Button } from "@/components/ui/button";
 import { AppNavigation } from "@/components/shared/AppNavigation";
 import { AccountLayout } from "@/components/shared/AccountLayout";
 import { FitTempoBrand } from "@/components/shared/FitTempoBrand";
-import { DayStrip, type DayEvent } from "@/components/shared/DayStrip";
-import { GlassPanel } from "@/components/shared/GlassPanel";
+import { StatusPage } from "@/components/shared/StatusPage";
 import type { Session } from "@/lib/api/session";
 
 type SessionProps = { session: Session };
 const inputClass = "tempo-field";
-
-const sampleEvents = [
-  { id: "sample-breakfast", occurredAt: "2026-11-19T00:00:00Z", kind: "meal", name: "Oats and berries", amount: "1 bowl" },
-  { id: "sample-lunch", occurredAt: "2026-11-19T04:35:00Z", kind: "meal", name: "Rice and vegetables", amount: "1 plate" },
-  { id: "sample-dinner", occurredAt: "2026-11-19T11:15:00Z", kind: "meal", name: "Soup and toast", amount: "1 serving" },
-] satisfies DayEvent[];
-
-function AuthFrame({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <main className="tempo-canvas mx-auto grid min-h-svh max-w-7xl content-start gap-4 px-4 py-6 sm:px-8 md:gap-5 lg:content-center lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:py-16">
-      <TempoCanvas />
-      <div className="min-w-0 space-y-5">
-        <FitTempoBrand />
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-        <GlassPanel tone="solid">{children}</GlassPanel>
-      </div>
-      <aside className="min-w-0 lg:pt-12">
-        <details className="space-y-3">
-          <summary className="min-h-11 cursor-pointer content-center font-medium">Preview a sample day</summary>
-          <p className="tempo-wordmark text-xl font-bold tracking-tight">Your meals. Your movement. Your rhythm.</p>
-          <DayStrip date="2026-11-19" timeZone="Asia/Manila" events={sampleEvents} sample panel />
-        </details>
-      </aside>
-    </main>
-  );
-}
 
 function AuthLink({ to, children }: { to: string; children: ReactNode }) {
   return (
@@ -63,8 +36,7 @@ type FormValues = { email: string; password: string };
 
 function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; token?: string }) {
   const config = forms[mode];
-  const redesigned = mode === "signIn" || mode === "register";
-  const Layout = redesigned || mode === "resend" ? AccountLayout : AuthFrame;
+  const usesEmailAsUsername = mode === "signIn" || mode === "register";
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   useEffect(() => {
     if (mode === "signIn" && session.getSnapshot().status === "checking") void session.initialize();
@@ -115,11 +87,12 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
   });
 
   return (
-    <Layout title={config.title} intro={(redesigned || mode === "resend") && (
+    <AccountLayout title={config.title} intro={mode !== "reset" && (
       <p className="account-intro text-sm text-muted-foreground">
         {mode === "resend" ? "Enter the email address you used to create your Fit Tempo account."
           : mode === "signIn" ? <>New to Fit Tempo? <AuthLink to="/register">Create account</AuthLink></>
-          : <>Already have an account? <AuthLink to="/sign-in">Sign in</AuthLink></>}
+          : mode === "register" ? <>Already have an account? <AuthLink to="/sign-in">Sign in</AuthLink></>
+          : "Enter your email address to request a password reset link."}
       </p>
     )}>
       <form className="space-y-4" noValidate onSubmit={(event) => {
@@ -130,7 +103,7 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
         {config.email && (
           <div className="space-y-1.5">
             <label className="block text-sm font-medium" htmlFor="account-email">Email address</label>
-            <input id="account-email" type="email" autoComplete={redesigned ? "username" : "email"} className={inputClass}
+            <input id="account-email" type="email" autoComplete={usesEmailAsUsername ? "username" : "email"} className={inputClass}
               required spellCheck={false} enterKeyHint={config.password ? "next" : "go"}
               aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "account-email-error" : undefined}
               {...register("email")} />
@@ -169,7 +142,7 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
             : <AuthLink to="/sign-in">Go to sign in</AuthLink>}
         </div>
       )}
-    </Layout>
+    </AccountLayout>
   );
 }
 
@@ -237,10 +210,10 @@ export function ResetPasswordPage({ session }: SessionProps) {
   const token = useEmailToken();
   if (token) return <AccountForm session={session} mode="reset" token={token} />;
   return (
-    <AuthFrame title="Reset your password">
-      <p className="mb-4 text-sm text-muted-foreground">Open the reset link from your email.</p>
-      <AuthLink to="/forgot-password">Request a new link</AuthLink>
-    </AuthFrame>
+    <StatusPage title="Reset link needed" description="Open the password reset link in your email or request a new one." icon={CircleAlert}>
+      <Button asChild><Link to="/forgot-password">Request a new link</Link></Button>
+      <AuthLink to="/sign-in">Go to sign in</AuthLink>
+    </StatusPage>
   );
 }
 
@@ -252,14 +225,14 @@ export function ProtectedLayout({ session }: SessionProps) {
 
   if (snapshot.status === "anonymous") return <Navigate to="/sign-in" replace />;
   if (snapshot.status === "checking") {
-    return <AuthFrame title="Checking your session"><p role="status">Please wait…</p></AuthFrame>;
+    return <StatusPage title="Checking your session" description="Fitness and nutrition data will load once your session is confirmed." icon={LoaderCircle} pending />;
   }
   if (snapshot.status === "error") {
     return (
-      <AuthFrame title="Session unavailable">
-        <p role="alert" className="mb-4 text-sm text-muted-foreground">Your session could not be checked.</p>
+      <StatusPage title="Couldn’t check your session" description="Try again to reconnect, or return to sign in." icon={WifiOff}>
         <Button onClick={() => void session.initialize()}>Try again</Button>
-      </AuthFrame>
+        <AuthLink to="/sign-in">Go to sign in</AuthLink>
+      </StatusPage>
     );
   }
 

@@ -61,7 +61,7 @@ export function createAppRouter(session: Session) {
           { path: '/development-preview', element: <ScaffoldPage /> },
         ],
       },
-      { path: '*', element: <RouteErrorPage /> },
+      { path: '*', element: <RouteErrorPage notFound /> },
     ],
   }])
 }
