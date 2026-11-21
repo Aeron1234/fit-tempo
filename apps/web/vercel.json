@@ -4,8 +4,8 @@
   "buildCommand": "npm --prefix ../.. run build:contracts && npm run build",
   "outputDirectory": "dist",
   "routes": [
-    { "src": "/api", "dest": "https://staging-api.invalid/api" },
-    { "src": "/api/(.*)", "dest": "https://staging-api.invalid/api/$1" },
+    { "src": "/api", "dest": "https://fit-tempo-api-staging.vercel.app/api" },
+    { "src": "/api/(.*)", "dest": "https://fit-tempo-api-staging.vercel.app/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(?!assets(?:/|$)|.*\\.[^/]+$).*", "dest": "/index.html" }
   ]

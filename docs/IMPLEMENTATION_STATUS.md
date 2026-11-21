@@ -16,9 +16,11 @@ Typecheck, lint, build and 30 web checks passed on the photo redesign, including
 
 ## Current position
 
-Phase 26 Vercel staging is prepared locally. Hosted verification is blocked on access to an isolated staging pair and its backend resources. Phase 27 has not started.
+Phase 26 has deployed Vercel staging web and API projects. Hosted verification is blocked on API startup and deployment of the updated web rewrite. Gemini remains disabled in staging. Phase 27 has not started.
 
 ## Phase 26 Vercel staging
+
+- November 21, 2026 staging follow-up. The hosted web root returned HTTP 200, direct API health returned 500, and web-origin API health returned 502. The user shared a production environment validation failure. The workspace rewrite now uses the deployed API alias. The [staging runbook](PHASE26_VERCEL_STAGING.md) records the correction, verification sequence and Gemini mode conflict. The rewrite change and documentation await commit. Hosted auth and cron checks remain open.
 
 - The deployment preparer owned the web routing config and [staging runbook](PHASE26_VERCEL_STAGING.md). The independent verifier reviewed the API and provider checks read-only. The lead integrated the configs, secure-cookie regression and redacted scheduler completion log. The web rewrite preserves API paths and precedes static files and the SPA fallback. Its reserved destination needs the confirmed staging API alias.
 - Sections 6.1 and 13.1. No schema or transaction changes. The runbook separates credentials and data for PostgreSQL, Redis, private objects and email. Initial staging keeps fixture food, AI disabled and scheduling in dry-run mode. Cron logs record the run ID and aggregate counts. Scheduled origin must be established through Vercel's logs in addition to this application log.
