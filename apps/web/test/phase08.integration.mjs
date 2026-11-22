@@ -200,7 +200,7 @@ test('protected layout withholds private content until a session is confirmed', 
   }
   const pending = render({ status: 'checking' })
   const failure = render({ status: 'error' })
-  assert.match(pending, /role="status".*Checking your session/)
+  assert.match(pending, /role="status".*Loading Fit Tempo/)
   assert.match(pending, /motion-safe:animate-spin/)
   assert.match(failure, />Try again<\/button>/)
   assert.match(failure, /href="\/sign-in"/)

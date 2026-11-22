@@ -2,7 +2,7 @@
 
 ## Current behavior
 
-The router uses `RouteErrorPage` for unknown URLs and uncaught route failures. Unknown URLs offer a link back to Fit Tempo, and route failures offer reload. These pages share the branded `StatusPage` with the session check, session recovery and missing password reset link. Pending session checks announce their status and respect reduced-motion preferences. Protected requests in `apps/web/src/lib/api/session.ts` retain HTTP status and an API code for some failures, but generally discard the request ID and conflict revision. Individual screens decide how to display errors. Analytics renders a query error inside its comparison card. The session layer manages authentication transitions and account-scoped cache isolation.
+The router uses `RouteErrorPage` for unknown URLs and uncaught route failures. Unknown URLs offer a link back to Fit Tempo, and route failures offer reload. These pages share the branded `StatusPage` with session recovery and missing password reset links. While access is being checked, `AppLoadingPage` displays and announces “Loading Fit Tempo” and respects reduced-motion preferences. Protected requests in `apps/web/src/lib/api/session.ts` retain HTTP status and an API code for some failures, but generally discard the request ID and conflict revision. Individual screens decide how to display errors. Analytics renders a query error inside its comparison card. The session layer manages authentication transitions and account-scoped cache isolation.
 
 ## Proposed recovery patterns
 

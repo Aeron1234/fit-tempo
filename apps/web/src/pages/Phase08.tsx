@@ -1,6 +1,6 @@
 import { TempoCanvas } from '@/components/shared/TempoCanvas';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, CircleCheck, LoaderCircle, WifiOff } from "lucide-react";
+import { CircleAlert, CircleCheck, WifiOff } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -10,6 +10,7 @@ import { AppNavigation } from "@/components/shared/AppNavigation";
 import { AccountLayout } from "@/components/shared/AccountLayout";
 import { FitTempoBrand } from "@/components/shared/FitTempoBrand";
 import { StatusPage } from "@/components/shared/StatusPage";
+import { AppLoadingPage } from "@/components/shared/AppLoadingPage";
 import type { Session } from "@/lib/api/session";
 
 type SessionProps = { session: Session };
@@ -225,7 +226,7 @@ export function ProtectedLayout({ session }: SessionProps) {
 
   if (snapshot.status === "anonymous") return <Navigate to="/sign-in" replace />;
   if (snapshot.status === "checking") {
-    return <StatusPage title="Checking your session" description="Fitness and nutrition data will load once your session is confirmed." icon={LoaderCircle} pending />;
+    return <AppLoadingPage />;
   }
   if (snapshot.status === "error") {
     return (
