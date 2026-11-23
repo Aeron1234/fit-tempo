@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { localDateSchema, positiveDecimalSchema, timeZoneSchema, waterResponseSchema } from '@fit-tempo/contracts';
+import { localDateSchema, positiveDecimalSchema, waterResponseSchema } from '@fit-tempo/contracts';
 import { Button } from '@/components/ui/button';
 import { preferences, preferencesResponse } from './profile-preferences';
 import { mealsResponse } from './meal-response';
+import { coverage, dashboardResponse } from './dashboard-response';
 import { DayStrip } from '@/components/shared/DayStrip';
 import { GlassPanel } from '@/components/shared/GlassPanel';
 import { ValuePicker } from '@/components/shared/ValuePicker';
@@ -14,18 +15,6 @@ import type { Session } from '@/lib/api/session';
 
 const profile = z.object({ displayName: z.string().nullable(), heightCm: positiveDecimalSchema.nullable() });
 const profileResponse = z.object({ data: profile });
-const coverage = z.object({
-  knownSubtotal: z.string().nullable(), missingItemCount: z.number().int().nonnegative(),
-});
-const dashboardResponse = z.object({
-  data: z.object({
-    date: localDateSchema, timezone: timeZoneSchema,
-    status: z.enum(['unrecorded', 'partial', 'complete']),
-    calories: coverage.extend({ unit: z.literal('kcal') }),
-    protein: coverage.extend({ unit: z.literal('g') }), itemCount: z.number().int().nonnegative(),
-  }),
-  meta: z.object({ mode: z.enum(['local', 'synthetic-demo']), fixtureDates: z.array(localDateSchema) }),
-});
 
 const inputStyle = 'tempo-field w-full border border-border bg-card px-3 py-2';
 const summaryStyle = 'min-h-11 cursor-pointer content-center font-medium';

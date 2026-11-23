@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { GlassPanel } from '@/components/shared/GlassPanel'
 import type { Session } from '@/lib/api/session'
 import { canonicalMealDecimal, mealWallTime, resolveMealInstant } from './meal-form'
+import { NutritionTargets } from './NutritionTargets'
 
 type Action =
   | { kind: 'water'; path: string; method: 'POST' | 'PATCH'; body: { amountMl: string; occurredAt: string; clientOperationId?: string } }
@@ -68,6 +69,7 @@ function PersonalGoals({ session, owner }: { session: Session; owner: string }) 
   }
   return <div className="tempo-card-grid min-w-0">
     <h1 className="text-3xl font-semibold">Hydration and goals</h1>
+    <NutritionTargets session={session} owner={owner} />
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {retry && <Button onClick={() => submit(retry)} disabled={write.isPending}>Retry the same water entry</Button>}
     {(water.isError || goals.isError) && <p role="alert">Tracking data could not be loaded. <Button variant="outline" onClick={() => { void water.refetch(); void goals.refetch() }}>Retry</Button></p>}

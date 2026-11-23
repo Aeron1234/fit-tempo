@@ -1,6 +1,14 @@
 # Fit Tempo implementation status
 
-Updated November 21, 2026 (Asia/Manila).
+Updated November 24, 2026 (Asia/Manila).
+
+## Nutrition targets
+
+Added editable daily calorie and macro targets to Goals. Users can enter targets without a profile or generate an estimate for maintenance, muscle gain, or weight loss from confirmed measurements. Estimate inputs stay in the browser. Newer weight logs can prompt recalculation, and a proposal only becomes active after confirmation.
+
+Migration 016 adds effective-dated, owner-scoped revisions. The authenticated API serializes competing writes, checks CSRF and validation, and returns the original revision on exact replay. Goals uses shared meal aggregation and shows metric-specific coverage for calories, protein, carbohydrates and fat.
+
+Verification covered 17 contract tests, three Goals rendering tests with synthetic query data, root typecheck/lint/build, and the new authenticated HTTP integration on disposable local PostgreSQL. PostgreSQL evidence includes migration 016, CSRF, account isolation, a competing save, and receipt replay. Browser interaction, both themes at 320px and 390px, and desktop layout remain open. The next check is an interactive Goals walkthrough against a migrated local database. See the [nutrition targets guide](NUTRITION_TARGETS.md) for scope and commands.
 
 ## Sign-in and registration refresh
 

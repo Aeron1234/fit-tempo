@@ -73,3 +73,8 @@ Quantities and money use six-decimal fixed-point arithmetic. Verified compatible
 Deduction locks the existing account pantry scope, rechecks the saved revision, quantities and expiry against the current preferred local date, and commits lot changes, one revision increment, a plan deduction marker and receipt atomically. Expired lots are excluded from previews; dated lots precede undated lots, with ID tie-breaking. A saved estimate with unknown quantity coverage cannot be deducted. Logging remains the existing separate confirmed meal action and never follows automatically from saving, buying or deducting.
 
 Candidate recipes, saved-plan reads and shopping-list reads are bounded to 100. Cursor pagination remains open. Oversized confirmed snapshots return validation errors before the transaction persists them.
+## Nutrition target revisions
+
+`GET /api/v1/me/nutrition-targets` returns the signed-in account's current revision and nullable target values, the applicable targets for its current local date, and its latest dated weight when available. `POST` requires an active session and CSRF, the expected revision, an operation UUID, and whole-number energy (kcal), protein, carbohydrate, and fat (g). Revision 0 means no saved targets. A day uses the highest revision effective by its recorded date.
+
+An account lock serializes writes. Each successful write stores a new revision and its operation digest in one row. Exact replay returns that revision before checking the latest revision. A reused operation ID with a changed payload or a stale competing write receives 409.

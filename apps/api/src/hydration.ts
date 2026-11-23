@@ -2,7 +2,7 @@
 import { Router, type RequestHandler } from 'express';
 import type { Pool, PoolClient } from 'pg';
 import {
-  hydrationGoalCreateSchema, hydrationGoalPatchSchema, localDateAt, uuidSchema,
+  hydrationGoalCreateSchema, hydrationGoalPatchSchema, localDateAt, nutritionTargetWriteSchema, uuidSchema,
   waterCreateSchema, waterQuerySchema, waterWriteSchema,
 } from '@fit-tempo/contracts';
 
@@ -125,8 +125,81 @@ async function streak(client: PoolClient, owner: string) {
   return row.streak;
 }
 
+const nutritionProjection = `revision::float8 AS revision, effective_from::text AS "effectiveFrom", created_at AS "savedAt",
+  energy_kcal AS "energyKcal", protein_g AS "proteinG", carbs_g AS "carbsG", fat_g AS "fatG"`;
+
+type NutritionTargets = {
+  effectiveFrom: string;
+  savedAt: Date;
+  energyKcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+};
+
+function targetResponse(row?: NutritionTargets & { revision: number }) {
+  if (!row) return { revision: 0, targets: null };
+  const { revision, effectiveFrom, savedAt, energyKcal, proteinG, carbsG, fatG } = row;
+  return { revision, targets: { effectiveFrom, savedAt, energyKcal, proteinG, carbsG, fatG } };
+}
+
 export function createHydrationRouter(db: Pool) {
   const router = Router();
+
+  router.get('/nutrition-targets', routed(async (_req, res) => {
+    const owner: string = res.locals.userId;
+    const data = await transact(db, owner, async client => {
+      const { rows: [row] } = await client.query<NutritionTargets & { revision: number }>(`
+        SELECT ${nutritionProjection} FROM nutrition_target_revisions
+        WHERE user_id=$1 ORDER BY nutrition_target_revisions.revision DESC LIMIT 1
+      `, [owner]);
+      const date = localDateAt(new Date().toISOString(), await ownerZone(client, owner));
+      const { rows: [applicable] } = await client.query<NutritionTargets & { revision: number }>(`
+        SELECT ${nutritionProjection} FROM nutrition_target_revisions
+        WHERE user_id=$1 AND effective_from <= $2
+        ORDER BY nutrition_target_revisions.revision DESC LIMIT 1
+      `, [owner, date]);
+      const { rows: [weight] } = await client.query<{ weightKg: string; measuredAt: Date; localDate: string }>(`
+        SELECT trim_scale(weight_kg)::text AS "weightKg", measured_at AS "measuredAt",
+          recorded_local_date::text AS "localDate"
+        FROM weight_logs WHERE user_id=$1
+        ORDER BY measured_at DESC,id LIMIT 1
+      `, [owner]);
+      return { ...targetResponse(row), localDate: date, dayTargets: targetResponse(applicable).targets, latestWeight: weight ?? null };
+    }, false);
+    res.json({ data });
+  }));
+
+  router.post('/nutrition-targets', routed(async (req, res) => {
+    const input = nutritionTargetWriteSchema.safeParse(req.body);
+    if (!input.success) throw new HydrationError(400, 'VALIDATION_ERROR', 'Enter valid daily calorie and macro targets.');
+    const { revision, clientOperationId, energyKcal, proteinG, carbsG, fatG } = input.data;
+    const owner: string = res.locals.userId;
+    const digest = createHash('sha256').update(JSON.stringify([revision, energyKcal, proteinG, carbsG, fatG])).digest('hex');
+    const data = await transact(db, owner, async client => {
+      const { rows: [receipt] } = await client.query<NutritionTargets & { revision: number; payload_digest: string }>(`
+        SELECT ${nutritionProjection}, payload_digest FROM nutrition_target_revisions
+        WHERE user_id=$1 AND client_operation_id=$2
+      `, [owner, clientOperationId]);
+      if (receipt) {
+        if (receipt.payload_digest !== digest) throw new HydrationError(409, 'IDEMPOTENCY_CONFLICT', 'Operation ID already used.');
+        return targetResponse(receipt);
+      }
+      const { rows: [current] } = await client.query<{ revision: number }>(`
+        SELECT revision::float8 AS revision FROM nutrition_target_revisions
+        WHERE user_id=$1 ORDER BY nutrition_target_revisions.revision DESC LIMIT 1
+      `, [owner]);
+      if ((current?.revision ?? 0) !== revision) throw conflict('Your nutrition targets changed. Reload them before saving.');
+      const date = localDateAt(new Date().toISOString(), await ownerZone(client, owner));
+      const { rows: [saved] } = await client.query<NutritionTargets & { revision: number }>(`
+        INSERT INTO nutrition_target_revisions
+          (user_id,revision,effective_from,energy_kcal,protein_g,carbs_g,fat_g,client_operation_id,payload_digest)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING ${nutritionProjection}
+      `, [owner, revision + 1, date, energyKcal, proteinG, carbsG, fatG, clientOperationId, digest]);
+      return targetResponse(saved);
+    });
+    res.json({ data });
+  }));
 
   router.get('/water', routed(async (req, res) => {
     const query = checked(waterQuerySchema, req.query);

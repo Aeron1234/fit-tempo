@@ -34,3 +34,4 @@ export * from './activity.js';
 export * from './hydration.js';
 export * from './food-recognition.js';
 export * from './analytics.js';
+export * from './nutrition-targets.js';

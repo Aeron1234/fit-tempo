@@ -8,6 +8,7 @@ Fit Tempo is a responsive web app for planning meals, tracking nutrition and wor
 - **Fit My Week** helps you find another slot for a missed workout or choose a shorter routine that fits. You review the proposed change before confirming it.
 - **Track meals and movement** with manual or barcode-assisted food logging, recipes, workout sets and timers, activity, body measurements, and hydration.
 - **Review your progress** with weekly metrics that show gaps in logging alongside recorded values.
+- **Set daily nutrition targets** under Goals. Estimate calories and macros from measurements, or enter your own and compare them with logged meals. See the [nutrition targets guide](docs/NUTRITION_TARGETS.md).
 
 ## Staging
 

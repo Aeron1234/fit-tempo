@@ -2,7 +2,10 @@ import { z } from 'zod';
 import { decimalSchema } from './common.js';
 import { localDateSchema, timeZoneSchema } from './time.js';
 
-const item = z.strictObject({ calories: decimalSchema.nullable(), protein: decimalSchema.nullable() });
+const item = z.strictObject({
+  calories: decimalSchema.nullable(), protein: decimalSchema.nullable(),
+  carbs: decimalSchema.nullable().optional(), fat: decimalSchema.nullable().optional(),
+});
 const day = z.strictObject({
   date: localDateSchema,
   timezone: timeZoneSchema,
@@ -41,6 +44,8 @@ export function aggregateDay(input: Day) {
     itemCount: items.length,
     calories: { unit: 'kcal' as const, ...subtotal(items.map(value => value.calories), confirmedZero) },
     protein: { unit: 'g' as const, ...subtotal(items.map(value => value.protein), confirmedZero) },
+    carbs: { unit: 'g' as const, ...subtotal(items.map(value => value.carbs ?? null), confirmedZero) },
+    fat: { unit: 'g' as const, ...subtotal(items.map(value => value.fat ?? null), confirmedZero) },
   };
 }
 

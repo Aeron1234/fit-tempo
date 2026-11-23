@@ -284,7 +284,7 @@ if (config.DATABASE_URL && config.JWT_ACCESS_SECRET && config.CSRF_SECRET) {
       request.url = '/phase17' + request.url;
       return authRouter(request, response, next);
     }
-    if (/^\/(?:water|goals|milestones|streak)(?:\/|$)/.test(path)) {
+    if (/^\/(?:water|goals|milestones|streak|nutrition-targets)(?:\/|$)/.test(path)) {
       request.url = '/phase18' + request.url;
       return authRouter(request, response, next);
     }

@@ -166,6 +166,8 @@ Convention: unless stated otherwise, id UUID is the primary key and created_at/u
 
 Body metrics are represented by profile height, weight_logs and measurement_logs rather than duplicate body_metrics facts. Activity goals are fitness_goals(type=activity); hydration/calorie/macro targets use typed goals/effective targets. Do not implement redundant activity_goals tables until distinct lifecycle requirements exist.
 
+Nutrition targets save an owner-scoped revision containing daily kcal and grams of protein, carbohydrate, and fat. Each revision carries a local effective date, client operation ID, and payload digest. The server serializes writes on the account row and returns the original revision for an exact replay. Use the shared daily nutrition aggregation for target progress, with separate coverage for each metric. Estimate inputs are browser-only and can use existing profile height and the latest dated weight.
+
 Nutrition/identity relationships:
 
 ```mermaid

@@ -10,6 +10,8 @@ type Row = {
   item_id: string | null;
   calories: unknown;
   protein: unknown;
+  carbs: unknown;
+  fat: unknown;
 };
 function nutrient(value: unknown) {
   const result = decimalSchema.safeParse(value);
@@ -25,7 +27,9 @@ export async function readNutritionDays(db: Pool | PoolClient, owner: string, fr
       COALESCE(status.recorded_time_zone, meal.recorded_time_zone) AS timezone,
       meal.id AS meal_id, item.id AS item_id,
       item.nutrition_snapshot #> '{consumedNutrients,energyKcal}' AS calories,
-      item.nutrition_snapshot #> '{consumedNutrients,proteinG}' AS protein
+      item.nutrition_snapshot #> '{consumedNutrients,proteinG}' AS protein,
+      item.nutrition_snapshot #> '{consumedNutrients,carbsG}' AS carbs,
+      item.nutrition_snapshot #> '{consumedNutrients,fatG}' AS fat
     FROM scope
     LEFT JOIN daily_tracking_status status ON status.user_id=$1 AND status.recorded_local_date=scope.day
       AND status.category='nutrition'
@@ -45,7 +49,10 @@ export async function readNutritionDays(db: Pool | PoolClient, owner: string, fr
     const status = first.status === 'complete' ? 'complete' : hasEntries ? 'partial' : 'unrecorded';
     return aggregateDay({
       date, timezone: first.timezone ?? timeZone, status, hasEntries,
-      items: rows.filter(row => row.item_id).map(row => ({ calories: nutrient(row.calories), protein: nutrient(row.protein) })),
+      items: rows.filter(row => row.item_id).map(row => ({
+        calories: nutrient(row.calories), protein: nutrient(row.protein),
+        carbs: nutrient(row.carbs), fat: nutrient(row.fat),
+      })),
     });
   });
 }
