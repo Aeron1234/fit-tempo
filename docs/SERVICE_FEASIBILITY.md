@@ -78,3 +78,6 @@ The food worker made two bounded direct probes. The AI/email/cron worker perform
 | Other infrastructure | PostgreSQL, Redis and private storage remain unconfigured. Provider/account selection, pooling, backup and private-read checks remain pending in their consuming phases. |
 
 Phase 02 remains partially blocked at its live-service gate. Phase 03 can proceed on explicit request with local/synthetic defaults and the above open items carried forward. All application scaffolding and clean-install/typecheck/build/proxy evidence belong to Phase 03. Stop here before that phase.
+## Current AI provider
+
+Groq replaces Gemini for approved synthetic food images. Check the selected model's availability, organization quotas, and data controls before any live test. The Gemini findings below describe the original feasibility review. [Groq vision](https://console.groq.com/docs/vision) · [Rate limits](https://console.groq.com/docs/rate-limits) · [Data controls](https://console.groq.com/docs/your-data)

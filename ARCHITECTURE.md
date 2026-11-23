@@ -31,14 +31,14 @@ MVP: account verification/recovery, dashboard, manual food/water/body/activity l
 | Request limits | express-rate-limit + rate-limit-redis | Shared IP/account/user counters across Vercel instances |
 | Temporary shared state | Managed Redis, compatible driver | Quotas, AI locks, caches; durable jobs remain in PostgreSQL |
 | Auth | Argon2id, maintained JWT/JOSE library, HttpOnly cookies | Custom session-backed JWT login/logout |
-| AI | Gemini provider adapter | Photo food suggestions and optional explanation/ranking |
+| AI | Groq provider adapter | Photo food suggestions and optional explanation/ranking |
 | Food data | USDA FoodData Central, Open Food Facts | Nutrient lookup and barcode records |
 | Email | EmailJS through its server-side send API | Backend-triggered fixed templates through a connected sender |
 | Scheduler | Vercel Cron Jobs | Authenticated production endpoint triggers persisted jobs |
 | Files | Supabase Storage (private bucket, S3-compatible API) | Authenticated uploads through Express, short-lived signed reads, file metadata in PostgreSQL |
 | Tests | Vitest, API integration tooling, Playwright | Business rules, auth, concurrency, browser flows |
 
-Libraries are generally open source; review licenses and pin compatible versions. Service hosting may cost money. Gemini offers model-dependent free quotas, not unlimited access. USDA requires an API key and enforces limits. Open Food Facts is open data with endpoint limits, attribution/license obligations, and incomplete product coverage. Redis/database/object storage free tiers have quotas and may suspend. EmailJS and its connected email service have separate send/rate allowances. Vercel frequent cron may require a paid plan or external scheduler. Do not fabricate current plan allowances or prices.
+Libraries are generally open source; review licenses and pin compatible versions. Service hosting may cost money. Groq offers model-dependent free quotas, not unlimited access. USDA requires an API key and enforces limits. Open Food Facts is open data with endpoint limits, attribution/license obligations, and incomplete product coverage. Redis/database/object storage free tiers have quotas and may suspend. EmailJS and its connected email service have separate send/rate allowances. Vercel frequent cron may require a paid plan or external scheduler. Do not fabricate current plan allowances or prices.
 
 OpenStreetMap is optional for a later user-initiated route view. Its data license does not grant unlimited public tile service usage. Observe tile attribution/policies and do not add maps merely to expand scope.
 
@@ -50,7 +50,7 @@ flowchart TD
     W -->|"Same-origin /api rewrite"| A["Express on Vercel"]
     A --> P["PostgreSQL: users, tracking, jobs"]
     A --> R["Redis: rate limits and cache"]
-    A --> G["Gemini provider adapter"]
+    A --> G["Groq provider adapter"]
     A --> F["USDA / Open Food Facts"]
     A --> E["EmailJS + connected sender"]
     C["Vercel Cron"] -->|"Bearer CRON_SECRET"| A
@@ -58,7 +58,7 @@ flowchart TD
     U -->|"Short-lived signed read"| S
 ```
 
-The browser never connects directly to PostgreSQL or sends privileged Gemini/EmailJS calls. Public frontend static files are not a security boundary. Express validates auth, ownership, CSRF, input, and quotas before business operations. File storage grants are server-authorized and limited to owned objects. Cron executes independently of whether the user has a browser open.
+The browser never connects directly to PostgreSQL or sends privileged Groq/EmailJS calls. Public frontend static files are not a security boundary. Express validates auth, ownership, CSRF, input, and quotas before business operations. File storage grants are server-authorized and limited to owned objects. Cron executes independently of whether the user has a browser open.
 
 ## 4. Authentication and authorization
 
@@ -237,7 +237,7 @@ apps/api/src/
     auth/ users/ foods/ meals/ recipes/ pantry/ meal-plans/
     exercises/ routines/ workouts/ schedules/ activity/
     hydration/ progress/ goals/ analytics/ notifications/ admin/ ai/
-  integrations/           gemini, usda, open-food-facts, emailjs, storage
+  integrations/           groq, usda, open-food-facts, emailjs, storage
   utils/                  Small shared utilities
 packages/contracts/      Shared transport schemas; no secrets
 database/migrations/     Ordered SQL
@@ -460,7 +460,7 @@ Each phase must update docs/IMPLEMENTATION_STATUS.md with scope, changed files, 
 | Phase | Work | Subagents and responsibilities | Completion gate |
 | --- | --- | --- | --- |
 | 01 | Audit and decisions | 1 read-only repository/environment auditor; lead owns project-skill bootstrap | New fitness status, constraints, reusable code and missing credentials identified; Section 18 project-local skill created/validated and referenced from AGENTS.md |
-| 02 | Service feasibility | 2 food-data investigator; AI/email/cron verifier | Real small authorized checks, licenses/quotas, Gemini synthetic-data policy and scheduling tier documented |
+| 02 | Service feasibility | 2 food-data investigator; AI/email/cron verifier | Real small authorized checks, licenses/quotas, Groq synthetic-data policy and scheduling tier documented |
 | 03 | Web/API scaffolding | 2 frontend owner; API owner | Section 8.1 Vite React/TS scaffold, compatible versions, workspace scripts, alias, Tailwind/shadcn, Fast Refresh, typecheck/lint/build and same-origin dev proxy verified |
 | 04 | Contracts/schema | 2 contract author; read-only reviewer | Shared units, time, errors, role and source identity contracts frozen |
 | 05 | PostgreSQL migrations | 2 schema owner; integrity reviewer | Clean migration, snapshots, ownership indexes, schedule/job uniqueness verified |
@@ -514,7 +514,7 @@ React/TypeScript supports browser-first forms/charts and consistent transport ty
 
 Session-backed JWT cookies give managed browser transport and true server revocation with a DB read trade-off. A modular monolith keeps deployment/maintenance practical. AI is an optional suggestion layer: arithmetic, scheduling, authorization, notification conditions and data truth remain deterministic. The two differentiators work without AI so free-tier outages do not break the product.
 
-FoodData Central may not cover mixed Filipino meals precisely. Curated ingredient-based recipes, user confirmations, provenance and manual editing are necessary. Open Food Facts is community data and may omit a barcode or nutrient. Gemini image understanding does not measure invisible oil or portion weight reliably. Camera photos, health profiles and training details may be sensitive: free Gemini development uses synthetic profiles/nonpersonal sample images only. Current Gemini terms restrict personal/sensitive data in unpaid services and clients directed toward or likely accessed by under-18s. Resolve audience/provider terms/data processing before public personalized AI. A personal portfolio is not an automatic exemption, and paid access does not waive the age condition. Include an AI-disabled manual demo path.
+FoodData Central may not cover mixed Filipino meals precisely. Curated ingredient-based recipes, user confirmations, provenance and manual editing are necessary. Open Food Facts is community data and may omit a barcode or nutrient. Groq image understanding does not measure invisible oil or portion weight reliably. Camera photos, health profiles and training details may be sensitive: free Groq development uses synthetic profiles/nonpersonal sample images only. Review provider terms, data controls and the intended audience before accepting user photos. Include an AI-disabled manual demo path.
 
 ## 16. Automated email notification system
 
@@ -584,7 +584,7 @@ All relevant state is durable. No untracked after-response send loop. Limit user
 
 Weekly email uses actual logs in the previous complete local period. Total workouts counts completed sessions only; total duration sums recorded actual duration with overlap/double-count checks. Average calories = sum recorded meal calories / number of nutrition-logged days, labeled “average on X logged days”; show any incomplete-day coverage. Water average similarly labels water-logged days; only a user-confirmed complete zero-intake day is a recorded zero. Never treat absent logs as zero.
 
-Weight change needs comparable measurements at defined period endpoints (or closest within a stated window); show dates and method. If insufficient data, display unavailable, not inferred loss. Activity sums known units with provenance, excluding already linked workout activity. Goal progress uses the stored target/baseline and actual compatible values; unknown baseline/target gives unavailable. Do not generate stats or motivational claims with Gemini. If there is no meaningful tracked data, skip summary or send a clearly labeled no-data message only if the user opted into that behavior.
+Weight change needs comparable measurements at defined period endpoints (or closest within a stated window); show dates and method. If insufficient data, display unavailable, not inferred loss. Activity sums known units with provenance, excluding already linked workout activity. Goal progress uses the stored target/baseline and actual compatible values; unknown baseline/target gives unavailable. Do not generate stats or motivational claims with Groq. If there is no meaningful tracked data, skip summary or send a clearly labeled no-data message only if the user opted into that behavior.
 
 ### 16.7 EmailJS templates, limits, and credentials
 
@@ -615,8 +615,8 @@ JWT_ACCESS_SECRET=
 JWT_REFRESH_SECRET=
 CSRF_SECRET=
 REDIS_URL=
-GEMINI_API_KEY=
-GEMINI_MODEL=
+GROQ_API_KEY=
+GROQ_MODEL=
 USDA_API_KEY=
 EMAILJS_SERVICE_ID=
 EMAILJS_TEMPLATE_ID=
@@ -642,7 +642,7 @@ Frontend:
 VITE_API_BASE_URL=/api/v1
 ```
 
-VITE_* values are bundled into browser code and are public. Never place DB, JWT, Gemini, EmailJS private, storage, Redis, or Cron secrets there. Configure HTTPS canonical FRONTEND_URL for links/Origin checks, redirects restricted to internal paths, distinct staging keys/data, and build-time variable refresh when redeploying. Revisit provider pricing/free tier and scheduling capability before public release; no service's free quota is assumed permanent.
+VITE_* values are bundled into browser code and are public. Never place DB, JWT, Groq, EmailJS private, storage, Redis, or Cron secrets there. Configure HTTPS canonical FRONTEND_URL for links/Origin checks, redirects restricted to internal paths, distinct staging keys/data, and build-time variable refresh when redeploying. Revisit provider pricing/free tier and scheduling capability before public release; no service's free quota is assumed permanent.
 
 ## 18. Copy-paste implementation prompt
 
@@ -663,7 +663,7 @@ Example subsequent request: `Use $fit-tempo-development to continue Phase 02 onl
 ### 18.2 Implementation instructions to encode in the skill
 
 ```text
-Act as lead implementation agent for Fit Tempo, this pure WEB fitness and nutrition portfolio app. Preserve the exact display name Fit Tempo in UI, email templates, documentation and portfolio materials; use fit-tempo for technical slugs and project/package names. Read this complete architecture, repository instructions and docs/IMPLEMENTATION_STATUS.md before changes. Use React/TypeScript/Vite, React Router, TanStack Query, Zustand for UI only, shadcn/ui/Tailwind, React Hook Form/Zod, Recharts/Lucide, Express/TypeScript, PostgreSQL, session-backed JWT HttpOnly cookies, express-rate-limit with Redis, backend EmailJS, and Gemini behind explicit data/audience gates. Frontend and Express deploy on Vercel. Do not introduce React Native, Expo, guest SQLite, Supabase Auth, or a microservice architecture.
+Act as lead implementation agent for Fit Tempo, this pure WEB fitness and nutrition portfolio app. Preserve the exact display name Fit Tempo in UI, email templates, documentation and portfolio materials; use fit-tempo for technical slugs and project/package names. Read this complete architecture, repository instructions and docs/IMPLEMENTATION_STATUS.md before changes. Use React/TypeScript/Vite, React Router, TanStack Query, Zustand for UI only, shadcn/ui/Tailwind, React Hook Form/Zod, Recharts/Lucide, Express/TypeScript, PostgreSQL, session-backed JWT HttpOnly cookies, express-rate-limit with Redis, backend EmailJS, and Groq behind explicit data/audience gates. Frontend and Express deploy on Vercel. Do not introduce React Native, Expo, guest SQLite, Supabase Auth, or a microservice architecture.
 
 Implement both required twists: Pantry and Budget Meal Planner and Fit My Week. Preserve unknown prices/nutrients, food-specific unit conversion, historical nutrient snapshots, deterministic cost/scheduling rules, curated shorter workouts, confirmation before save/reschedule/deduction, revisions and idempotency. No AI-generated numbers replace verified calculations or missing data. AI suggestions remain editable and require confirmation; synthetic images/profiles for free-tier development, no hidden personal health data uploads.
 
@@ -705,10 +705,10 @@ Reviewed November 16, 2026; recheck changing limits, terms, licenses, package AP
 - [USDA FoodData Central API, limits, license](https://fdc.nal.usda.gov/api-guide/)
 - [Open Food Facts API, license and usage](https://openfoodfacts.github.io/openfoodfacts-server/api/)
 - [OpenStreetMap tile policy](https://operations.osmfoundation.org/policies/tiles/)
-- [Gemini pricing](https://ai.google.dev/gemini-api/docs/pricing)
-- [Gemini project quotas](https://ai.google.dev/gemini-api/docs/rate-limits)
-- [Gemini terms and data handling](https://ai.google.dev/gemini-api/terms)
-- [Gemini image understanding](https://ai.google.dev/gemini-api/docs/image-understanding)
+- [Groq pricing](https://console.groq.com/docs/models)
+- [Groq project quotas](https://console.groq.com/docs/rate-limits)
+- [Groq data controls](https://console.groq.com/docs/your-data)
+- [Groq image understanding](https://console.groq.com/docs/vision)
 - [express-rate-limit stores](https://express-rate-limit.mintlify.app/reference/stores)
 - [rate-limit-redis](https://github.com/express-rate-limit/rate-limit-redis)
 - [MDN cookie attributes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)

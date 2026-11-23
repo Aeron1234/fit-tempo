@@ -18,6 +18,10 @@ Typecheck, lint, build and 30 web checks passed on the photo redesign, including
 
 ## Current position
 
+Vercel can opt into Groq for signed-in analysis of approved sample images. The adapter supports production's local app mode with Redis quotas and EmailJS. The mock adapter still requires synthetic-demo mode. The default remains disabled. Personal image uploads remain unavailable. Hosted Groq verification requires a redeploy with the server-side key and a signed-in sample request.
+
+Groq replaces the original Gemini adapter for approved synthetic food images. The earlier Gemini entries describe historical work. Configure the replacement with `AI_ADAPTER=groq-synthetic`, `GROQ_API_KEY`, and `GROQ_MODEL` in local synthetic-demo mode with Redis and the test mailbox. Build, lint, and all 10 recognition checks passed with loopback Express and mocked Groq responses. Vercel staging keeps AI disabled. User-photo uploads, live Groq verification, and any production AI enablement remain open.
+
 Phase 26 has deployed Vercel staging web and API projects. Hosted verification is blocked on API startup and deployment of the updated web rewrite. Gemini remains disabled in staging. Phase 27 has not started.
 
 ## Phase 26 Vercel staging

@@ -15,7 +15,17 @@ The [Fit Tempo staging frontend](https://fit-tempo-web-staging.vercel.app/) is h
 
 ### AI food recognition
 
-Gemini is disabled on staging. The current adapter accepts approved sample images in local synthetic-demo mode. The deployed API uses local mode with EmailJS, which is incompatible with that adapter. A Gemini API key alone does not enable real-photo analysis. Barcode lookup and manual meal entry remain available when AI is off.
+Groq vision is available for approved sample images only. For local testing, configure these values in `apps/api/.env.local` alongside your local database, auth secrets, and `REDIS_URL`:
+
+```dotenv
+APP_MODE=synthetic-demo
+AI_ADAPTER=groq-synthetic
+EMAIL_ADAPTER=test-mailbox
+GROQ_API_KEY=<your server-side Groq key>
+GROQ_MODEL=qwen/qwen3.8-27b
+```
+
+If upgrading an existing setup, replace the old Gemini adapter setting and remove the old Gemini variables. Restart the API after editing the file. On Vercel, set the three Groq settings in the API project and keep `APP_MODE=local`, EmailJS and Redis configured. Barcode lookup and manual meal entry remain available. [Staging runbook](docs/PHASE26_VERCEL_STAGING.md) · [Groq vision](https://console.groq.com/docs/vision)
 
 ## Run locally
 
