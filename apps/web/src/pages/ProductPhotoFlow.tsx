@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { CameraDialog } from '@/components/shared/CameraDialog';
+import { ProductPhotoFrame } from '@/components/shared/ProductPhotoFrame';
 import { Button } from '@/components/ui/button';
 import { analyzeProductPhoto, sampleLabelPreview, type ProductPhoto, type sampleProduct } from './product-photo';
 
@@ -14,8 +15,10 @@ function Capture({ done }: { done: (draft: typeof sampleProduct) => void }) {
   }, [photo]);
   return photo ? <>
     <h3 ref={previewHeading} tabIndex={-1} className="font-semibold">Review photo</h3>
-    <img src={photo.kind === 'camera' ? photo.preview : sampleLabelPreview} alt={photo.kind === 'camera' ? 'Captured product label' : 'Fictional oat crisps label'}
-      className="mx-auto block h-auto max-h-[48dvh] max-w-full rounded-xl border border-border object-contain" />
+    <ProductPhotoFrame>
+      <img src={photo.kind === 'camera' ? photo.preview : sampleLabelPreview} alt={photo.kind === 'camera' ? 'Captured product label' : 'Fictional oat crisps label'}
+        className="absolute inset-0 size-full object-contain" />
+    </ProductPhotoFrame>
     {photo.kind === 'camera' && <p className="text-sm text-muted-foreground">Your photo stays on this device. Analysis of camera photos is unavailable.</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
     <div className="flex flex-wrap gap-2">

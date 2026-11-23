@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import Webcam from 'react-webcam';
+import { ProductPhotoFrame } from '@/components/shared/ProductPhotoFrame';
 import { Button } from '@/components/ui/button';
 import { cameraAvailable, cameraError, rearCamera, stopCamera } from '@/lib/camera';
 
@@ -13,13 +14,13 @@ export default function ProductPhotoCamera({ onCapture, onSample }: {
   const supported = cameraAvailable();
   return <>
     {supported && !error ? (
-      <div className="relative mx-auto aspect-[3/4] max-h-[55dvh] w-full max-w-xs overflow-hidden rounded-xl bg-muted md:aspect-[4/3] md:max-w-none">
+      <ProductPhotoFrame>
         <Webcam ref={webcam} audio={false} muted playsInline videoConstraints={rearCamera}
           forceScreenshotSourceSize screenshotFormat="image/jpeg" screenshotQuality={0.85}
-          aria-label="Live camera preview" className="absolute inset-0 size-full object-cover"
+          aria-label="Live camera preview" className="absolute inset-0 size-full object-contain"
           onLoadedData={() => setReady(true)} onUserMediaError={failure => setError(cameraError(failure))} />
         {!ready && <p role="status" className="absolute inset-0 grid place-items-center p-3 text-center text-sm">Starting camera…</p>}
-      </div>
+      </ProductPhotoFrame>
     ) : error ? <p role="alert">{error}</p>
       : <p role="status">Camera capture requires a supported browser on HTTPS or localhost.</p>}
     <div className="flex flex-wrap gap-2">
