@@ -2,7 +2,7 @@ import { mealWriteSchema } from '@fit-tempo/contracts';
 import { canonicalMealDecimal, resolveMealInstant } from './meal-form';
 import type { ProductLabel } from './product-photo';
 
-export type RecognitionCandidateDraft = { name: string; estimate: string | null; grams: string; label?: ProductLabel };
+export type RecognitionCandidateDraft = { name: string; estimate: string | null; grams: string; label?: ProductLabel; labelSource?: 'camera' | 'sample' };
 const unknownNutrients = {
   energyKcal: null, proteinG: null, carbsG: null, fatG: null, fiberG: null, sodiumMg: null,
 };

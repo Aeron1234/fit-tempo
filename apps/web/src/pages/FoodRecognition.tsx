@@ -148,7 +148,7 @@ function RecognitionReview({ session, owner }: { session: Session; owner: string
         'Enter the measured portion for each food you choose to log. Nutrient values will be recorded as unknown.'}</p>
       {candidates.map((item, index) => <fieldset key={index} className="grid gap-2 border-t border-border pt-3">
         <legend className="px-1 font-medium">Food {index + 1}</legend>
-        <p className="text-sm text-muted-foreground">{item.label ? 'Source: Synthetic product label (mock analysis)' :
+        <p className="text-sm text-muted-foreground">{item.label ? (item.labelSource === 'camera' ? 'Source: Your nutrition label photo' : 'Source: Synthetic product label (mock analysis)') :
           item.estimate === null ? 'Suggested portion: Unknown' : 'Estimated portion: ' + item.estimate + ' g'}</p>
         <label className="grid gap-1">Food name<input required className={field} maxLength={200} value={item.name}
           onChange={event => setCandidates(prior => prior.map((candidate, i) => i === index ? { ...candidate, name: event.target.value } : candidate))} /></label>

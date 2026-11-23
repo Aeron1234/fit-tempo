@@ -36,7 +36,7 @@ test('only the active owner can see the fixture chooser and manual fallback is a
     assert.match(owner, /Synthetic sample/);
     assert.match(owner, /Analyze sample/);
     assert.match(owner, /\/fixtures\/synthetic-rice-bowl/);
-    assert.match(owner, /Capture product photo/);
+    assert.match(owner, /Scan nutrition label/);
     assert.doesNotMatch(owner, /<video|Captured product label/);
     assert.doesNotMatch(owner, /type="file"|Confirm and log meal/);
     snapshot = { status: 'authenticated', user: { id: 'peer', role: 'trainee' } };
