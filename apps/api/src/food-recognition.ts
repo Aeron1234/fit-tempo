@@ -103,14 +103,14 @@ export function createFoodRecognitionRouter({ mode, reserve, recognize = localRe
   return router
 }
 
-const geminiResponseSchema = z.object({
-  candidates: z.array(z.object({
-    finishReason: z.literal('STOP'),
-    content: z.object({ parts: z.array(z.object({ text: z.string(), thought: z.boolean().optional() })).min(1) }),
+const groqResponseSchema = z.object({
+  choices: z.array(z.object({
+    finish_reason: z.literal('stop'),
+    message: z.object({ content: z.string() }),
   })).length(1),
 })
 
-async function readGeminiResponse(response: Response): Promise<unknown> {
+async function readProviderResponse(response: Response): Promise<unknown> {
   if (!response.body) throw new RecognizerFailure('invalid')
   const reader = response.body.getReader()
   const decoder = new TextDecoder()
@@ -135,31 +135,21 @@ async function readGeminiResponse(response: Response): Promise<unknown> {
   }
 }
 
-export function createGeminiFoodRecognizer({ apiKey, model, transport = fetch }: {
+export function createGroqFoodRecognizer({ apiKey, model, transport = fetch }: {
   apiKey: string; model: string; transport?: typeof fetch
 }): Recognizer {
-  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,100}$/.test(model)) throw Error('Invalid food recognition model identifier')
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'
   return async (fixture, signal) => {
-    const response = await transport(url, {
+    const response = await transport('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', redirect: 'error', signal,
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        contents: [{ parts: [
-          { text: 'List at most eight visible foods in this synthetic illustration by short name. There is no scale, so portionGrams must be null. Do not infer nutrients. Return JSON with a candidates array of objects containing name and portionGrams.' },
-          { inlineData: { mimeType: fixture.mimeType, data: fixture.image.toString('base64') } },
+        model,
+        messages: [{ role: 'user', content: [
+          { type: 'text', text: 'List at most eight visible foods in this synthetic illustration by short name. There is no scale, so portionGrams must be null. Do not infer nutrients. Return a JSON object with a candidates array of objects containing name and portionGrams.' },
+          { type: 'image_url', image_url: { url: `data:${fixture.mimeType};base64,${fixture.image.toString('base64')}` } },
         ] }],
-        generationConfig: {
-          candidateCount: 1, maxOutputTokens: 512, responseMimeType: 'application/json',
-          responseJsonSchema: {
-            type: 'object', required: ['candidates'], properties: {
-              candidates: { type: 'array', items: {
-                type: 'object', required: ['name', 'portionGrams'],
-                properties: { name: { type: 'string' }, portionGrams: { type: 'null' } },
-              } },
-            },
-          },
-        },
+        max_completion_tokens: 512,
+        response_format: { type: 'json_object' },
       }),
     })
     if (!response.ok) {
@@ -167,12 +157,10 @@ export function createGeminiFoodRecognizer({ apiKey, model, transport = fetch }:
       if (response.status === 429) throw new RecognizerFailure('quota')
       throw Error('Food recognition provider unavailable')
     }
-    const envelope = geminiResponseSchema.safeParse(await readGeminiResponse(response))
+    const envelope = groqResponseSchema.safeParse(await readProviderResponse(response))
     if (!envelope.success) throw new RecognizerFailure('invalid')
     try {
-      const candidateText = envelope.data.candidates[0]!.content.parts
-        .filter(part => !part.thought).map(part => part.text).join('')
-      const data = foodRecognitionOutputSchema.parse(JSON.parse(candidateText))
+      const data = foodRecognitionOutputSchema.parse(JSON.parse(envelope.data.choices[0]!.message.content))
       if (data.candidates.some(candidate => candidate.portionGrams !== null)) throw Error('Unmeasurable portion')
       return data
     } catch {

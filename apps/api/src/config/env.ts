@@ -8,9 +8,9 @@ const environmentSchema = z.object({
   FOOD_ADAPTER: z.enum(['fixtures', 'live']).default('fixtures'),
   USDA_API_KEY: z.string().trim().min(1).optional(),
   OPEN_FOOD_FACTS_USER_AGENT: z.string().trim().min(8).max(200).regex(/^[\x20-\x7e]+$/).optional(),
-  AI_ADAPTER: z.enum(['disabled', 'synthetic', 'gemini-synthetic']).default('disabled'),
-  GEMINI_API_KEY: z.string().trim().min(1).optional(),
-  GEMINI_MODEL: z.string().trim().regex(/^gemini-[a-z0-9][a-z0-9.-]{0,79}$/).optional(),
+  AI_ADAPTER: z.enum(['disabled', 'synthetic', 'groq-synthetic']).default('disabled'),
+  GROQ_API_KEY: z.string().trim().min(1).optional(),
+  GROQ_MODEL: z.string().trim().regex(/^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,100}$/).optional(),
   EMAIL_ADAPTER: z.enum(['test-mailbox', 'emailjs']).default('test-mailbox'),
   EMAILJS_SERVICE_ID: z.string().trim().min(1).optional(),
   EMAILJS_PUBLIC_KEY: z.string().trim().min(1).optional(),
@@ -74,11 +74,14 @@ export function readEnvironment(input: NodeJS.ProcessEnv = process.env) {
   )) {
     throw new Error('Scheduled inbox testing requires Hobby mode, cron authentication, EmailJS and distinct notification templates.');
   }
-  if (result.data.AI_ADAPTER !== 'disabled' && (result.data.APP_MODE !== 'synthetic-demo' || !result.data.REDIS_URL)) {
-    throw new Error('Food recognition requires synthetic-demo mode and Redis quotas.');
+  if (result.data.AI_ADAPTER !== 'disabled' && !result.data.REDIS_URL) {
+    throw new Error('Food recognition requires Redis quotas.');
   }
-  if (result.data.AI_ADAPTER === 'gemini-synthetic' && !(result.data.GEMINI_API_KEY && result.data.GEMINI_MODEL)) {
-    throw new Error('Gemini synthetic food recognition requires a server key and model.');
+  if (result.data.AI_ADAPTER === 'synthetic' && result.data.APP_MODE !== 'synthetic-demo') {
+    throw new Error('The mock food recognizer requires synthetic-demo mode.');
+  }
+  if (result.data.AI_ADAPTER === 'groq-synthetic' && !(result.data.GROQ_API_KEY && result.data.GROQ_MODEL)) {
+    throw new Error('Groq synthetic food recognition requires a server key and model.');
   }
   if (result.data.FOOD_ADAPTER === 'live' && (
     result.data.APP_MODE !== 'local' || !result.data.REDIS_URL ||

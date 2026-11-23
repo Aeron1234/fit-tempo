@@ -1,10 +1,10 @@
-﻿import assert from 'node:assert/strict'
+import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import test from 'node:test'
 import express from 'express'
 import sharp from 'sharp'
 import { foodRecognitionResponseSchema } from '@fit-tempo/contracts'
-import { createFoodRecognitionRouter, createGeminiFoodRecognizer } from '../dist/food-recognition.js'
+import { createFoodRecognitionRouter, createGroqFoodRecognizer } from '../dist/food-recognition.js'
 
 const path = '/ai/food-suggestions'
 const fixtureId = 'synthetic-rice-bowl'
@@ -124,34 +124,36 @@ test('food recognition exercises disabled, quota, deadline and malformed suggest
   })
 })
 
-test('Gemini adapter validates the structured response and sends only fixture bytes with static instructions', async () => {
+test('Groq adapter validates the structured response and sends only fixture bytes with static instructions', async () => {
   const fixture = { id: fixtureId, image: Buffer.from('fictional-fixture'), mimeType: 'image/png' }
-  const envelope = raw => ({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: raw }] } }] })
+  const envelope = raw => ({ choices: [{ finish_reason: 'stop', message: { content: raw } }] })
   const candidate = { candidates: [{ name: 'Rice', portionGrams: null }] }
   const replies = [
     Response.json(envelope(JSON.stringify(candidate))),
     Response.json(envelope('broken json')),
     Response.json(envelope(JSON.stringify({ candidates: [{ name: 'Rice', portionGrams: '12' }] }))),
-    Response.json({ candidates: [] }),
+    Response.json(envelope(JSON.stringify({ candidates: [{ name: 'Rice', portionGrams: 12 }] }))),
+    Response.json({ choices: [] }),
     new Response('', { status: 429 }),
   ]
-  const ai = createGeminiFoodRecognizer({
+  const ai = createGroqFoodRecognizer({
     apiKey: 'synthetic-fake-key', model: 'synthetic-test-model',
     transport: async (url, init) => {
-      assert.equal(url, 'https://generativelanguage.googleapis.com/v1beta/models/synthetic-test-model:generateContent')
-      assert.equal(init.headers['x-goog-api-key'], 'synthetic-fake-key')
+      assert.equal(url, 'https://api.groq.com/openai/v1/chat/completions')
+      assert.equal(init.headers.Authorization, 'Bearer synthetic-fake-key')
       assert.equal(init.redirect, 'error')
       const body = JSON.parse(init.body)
-      assert.equal(body.generationConfig.responseMimeType, 'application/json')
-      assert.deepEqual(body.contents[0].parts[1], {
-        inlineData: { mimeType: 'image/png', data: fixture.image.toString('base64') },
+      assert.equal(body.model, 'synthetic-test-model')
+      assert.deepEqual(body.response_format, { type: 'json_object' })
+      assert.deepEqual(body.messages[0].content[1], {
+        type: 'image_url', image_url: { url: `data:image/png;base64,${fixture.image.toString('base64')}` },
       })
       return replies.shift()
     },
   })
   const signal = new AbortController().signal
   assert.deepEqual(await ai(fixture, signal), candidate)
-  for (let index = 0; index < 3; index++) await assert.rejects(ai(fixture, signal), { kind: 'invalid' })
+  for (let index = 0; index < 4; index++) await assert.rejects(ai(fixture, signal), { kind: 'invalid' })
   await assert.rejects(ai(fixture, signal), { kind: 'quota' })
   assert.equal(replies.length, 0)
 })

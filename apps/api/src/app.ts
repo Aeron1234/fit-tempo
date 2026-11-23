@@ -137,7 +137,7 @@ if (config.DATABASE_URL && config.JWT_ACCESS_SECRET && config.CSRF_SECRET) {
     });
     app.use("/api/v1/auth", limits.coarseIp);
   }
-  const [{ createProfileRouter }, { createFoodRouter }, { createManualFoodRouter }, { createMealsRouter }, { createIngredientsRouter }, { createPlannerRouter }, { createExercisesRouter }, { createWorkoutsRouter }, { createScheduleRouter }, { createActivityRouter }, { createHydrationRouter }, { createFoodRecognitionRouter, createGeminiFoodRecognizer }, { createAnalyticsRouter }] = await Promise.all([
+  const [{ createProfileRouter }, { createFoodRouter }, { createManualFoodRouter }, { createMealsRouter }, { createIngredientsRouter }, { createPlannerRouter }, { createExercisesRouter }, { createWorkoutsRouter }, { createScheduleRouter }, { createActivityRouter }, { createHydrationRouter }, { createFoodRecognitionRouter, createGroqFoodRecognizer }, { createAnalyticsRouter }] = await Promise.all([
     import('./profile.js'), import('./food/index.js'), import('./manual-food.js'), import('./meals.js'), import('./ingredients.js'), import('./planner.js'), import('./exercises.js'), import('./workouts.js'), import('./schedule.js'), import('./activity.js'), import('./hydration.js'), import('./food-recognition.js'), import('./analytics.js'),
   ]);
   let sender: Parameters<typeof createAuthRouter>[0]['sender'];
@@ -222,8 +222,8 @@ if (config.DATABASE_URL && config.JWT_ACCESS_SECRET && config.CSRF_SECRET) {
       foodRecognition: createFoodRecognitionRouter({
         mode: config.AI_ADAPTER === 'disabled' ? 'disabled' : 'synthetic',
         reserve: reserveRecognition,
-        recognize: config.AI_ADAPTER === 'gemini-synthetic'
-          ? createGeminiFoodRecognizer({ apiKey: config.GEMINI_API_KEY!, model: config.GEMINI_MODEL! })
+        recognize: config.AI_ADAPTER === 'groq-synthetic'
+          ? createGroqFoodRecognizer({ apiKey: config.GROQ_API_KEY!, model: config.GROQ_MODEL! })
           : undefined,
       }),
     });
