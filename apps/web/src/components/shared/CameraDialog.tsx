@@ -27,9 +27,11 @@ export function CameraDialog({ title, action, description, children, disabled }:
       className="tempo-picker-sheet glass-float glass-solid fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:inset-0 md:m-auto md:h-fit md:max-w-lg"
       onClose={() => setOpen(false)} onCancel={close}>
       <div className="space-y-3">
-        <h2 id={labelId} className="text-xl font-semibold">{title}</h2>
+        <div className="flex items-start justify-between gap-3">
+          <h2 id={labelId} className="min-w-0 self-center text-xl font-semibold">{title}</h2>
+          <Button type="button" variant="outline" className="shrink-0" onClick={close}>Cancel</Button>
+        </div>
         <p id={descriptionId} className="text-sm text-muted-foreground">{description}</p>
-        <Button type="button" variant="outline" onClick={close}>Cancel</Button>
         {open && children(close)}
       </div>
     </dialog>

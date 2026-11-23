@@ -639,6 +639,8 @@ November 21, 2026 (Asia/Manila). Three workers owned disjoint foundations, publi
 
 ## Focused chart and Food camera update
 
+Phone camera follow-up. The product camera used a 16rem height cap with contain sizing, which squeezed tall streams into a narrow strip. The live preview now fills a responsive frame, capture waits for video data, and review shows the full locally captured frame. The shared camera dialog places Cancel alongside its title. Real-device verification remains open.
+
 November 21, 2026 (Asia/Manila). Adopted the official shadcn New York v4 Chart registry component in the existing shared ChartCard. Its registry lists Recharts 3.8.0. The checked-in adaptation uses existing Recharts 3.4.1 types, existing Fit Tempo tokens, a bounded responsive container and visible focus. Exact stored values, gaps, zeroes, descriptions and disclosure tables remain available. Existing chart routes retain their lazy loading.
 
 - Food adds a user-started rear-camera scanner with @yudiel/react-qr-scanner 2.6.0 and a same-origin zxing-wasm 3.1.7 asset. The scanner filters EAN-8, EAN-13, UPC-A and UPC-E, validates the retail check digit, expands UPC-E, preserves leading zeros, and debounces repeated callbacks by consuming a single result per scan session. It calls the existing lookup and presents the normal results with provenance. Typed lookup and manual entry remain available.

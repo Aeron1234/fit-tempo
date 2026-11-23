@@ -15,7 +15,7 @@ function Capture({ done }: { done: (draft: typeof sampleProduct) => void }) {
   return photo ? <>
     <h3 ref={previewHeading} tabIndex={-1} className="font-semibold">Review photo</h3>
     <img src={photo.kind === 'camera' ? photo.preview : sampleLabelPreview} alt={photo.kind === 'camera' ? 'Captured product label' : 'Fictional oat crisps label'}
-      className="max-h-64 w-full rounded-md border border-border object-contain" />
+      className="mx-auto block h-auto max-h-[48dvh] max-w-full rounded-xl border border-border object-contain" />
     {photo.kind === 'camera' && <p className="text-sm text-muted-foreground">Your photo stays on this device. Analysis of camera photos is unavailable.</p>}
     {error && <p role="alert" className="text-destructive">{error}</p>}
     <div className="flex flex-wrap gap-2">
@@ -27,15 +27,15 @@ function Capture({ done }: { done: (draft: typeof sampleProduct) => void }) {
     </div>
   </> : <>
     <Suspense fallback={<p role="status">Loading camera.</p>}>
-      <ProductPhotoCamera onCapture={preview => setPhoto({ kind: 'camera', preview })} />
+      <ProductPhotoCamera onCapture={preview => setPhoto({ kind: 'camera', preview })}
+        onSample={() => setPhoto({ kind: 'sample' })} />
     </Suspense>
-    <Button type="button" variant="outline" onClick={() => setPhoto({ kind: 'sample' })}>Use synthetic label</Button>
   </>;
 }
 
 export function ProductPhotoFlow({ disabled, onDraft }: { disabled: boolean; onDraft: (draft: typeof sampleProduct) => void }) {
   return <CameraDialog title="Product label photo" action="Capture product photo" disabled={disabled}
-    description="Frame the package or nutrition label. The preview stays on this device. You can try analysis with the synthetic label.">
+    description="Center the label in the camera preview. Your photo stays on this device.">
     {close => <Capture done={draft => { onDraft(draft); close(); }} />}
   </CameraDialog>;
 }
