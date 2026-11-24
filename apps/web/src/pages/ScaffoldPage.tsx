@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
@@ -36,7 +37,7 @@ export function ScaffoldPage() {
           className="my-4 min-h-12 text-sm text-muted-foreground"
           aria-live="polite"
         >
-          {health.isPending && <p>Checking the local API…</p>}
+          {health.isPending && <LoadingSkeleton label="Checking the local API." shape="ledger" count={1} />}
           {health.isError && (
             <p role="alert">API unavailable. Start the API server and retry.</p>
           )}

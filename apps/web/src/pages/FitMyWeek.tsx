@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -249,7 +250,7 @@ function PrivateWeek({ session, owner }: { session: Session; owner: string }) {
       <p>Some schedule information is unavailable.</p>
       <Button variant="outline" onClick={() => { refresh(); void routines.refetch() }}>Retry loading</Button>
     </div>}
-    {(schedule.isPending || availability.isPending) && <p role="status">Loading your week.</p>}
+    {schedule.isPending && <GlassPanel tone="solid" title="Workout calendar"><LoadingSkeleton label="Loading your week." shape="week" /></GlassPanel>}
     {preview?.proposal && <ProposalDetails proposal={preview.proposal} busy={busy} submit={submit} close={() => {
       setPreview(null)
       previewTrigger.current?.focus()
@@ -309,6 +310,7 @@ function PrivateWeek({ session, owner }: { session: Session; owner: string }) {
       </fieldset>
       {routines.data?.data.length === 0 && <p className="text-sm">Create a routine on the Exercises page to schedule it.</p>}
     </form></details></GlassPanel>}
+    {availability.isPending && <GlassPanel tone="solid" title="Availability"><LoadingSkeleton label="Loading availability." shape="form" count={1} /></GlassPanel>}
     {availabilityData && <AvailabilityForm key={availabilityData.revision} availability={availabilityData} busy={busy} submit={submit} />}
   </div>
 }

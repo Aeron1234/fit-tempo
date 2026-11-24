@@ -133,7 +133,7 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
               : message && <p className="text-sm text-success">{message}</p>}
           </div>
         ) : message && <p role="status" className="flex items-start gap-2 text-sm text-success"><CircleCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />{message}</p>}
-        <Button type="submit" className="min-h-11 w-full" disabled={isSubmitting || (mode === "signIn" && snapshot.status === "checking") || (mode === "reset" && Boolean(message))}>
+        <Button type="submit" className="min-h-11 w-full" disabled={isSubmitting || (mode === "reset" && Boolean(message))}>
           {isSubmitting ? "Please wait…" : config.button}
         </Button>
       </form>

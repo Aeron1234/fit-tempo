@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -240,7 +241,7 @@ function PrivateWorkouts({ session, owner }: { session: Session; owner: string }
       {open.map(workout => <WorkoutCard key={workout.id} workout={workout} busy={busy} submit={submit} />)}</section>}
     <GlassPanel tone="solid"><details open={open.length === 0}>
       <summary className="min-h-11 cursor-pointer py-3 text-xl font-semibold">Start from a routine</summary>
-      {routines.isPending && <p role="status">Loading routines.</p>}
+      {routines.isPending && <LoadingSkeleton label="Loading workout routines." shape="rows" />}
       {routines.isError && <p role="alert">Routines are unavailable. <Button variant="outline" onClick={() => void routines.refetch()}>Retry loading</Button></p>}
       {routines.data?.data.length === 0 && <p>Create a routine on the Exercises page to start a workout.</p>}
       {routines.data?.data.map(routine => <div key={routine.id} className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
@@ -253,7 +254,7 @@ function PrivateWorkouts({ session, owner }: { session: Session; owner: string }
       </div>)}
     </details></GlassPanel>
     <GlassPanel tone="solid" title="Workout history">
-      {workouts.isPending && <p role="status">Loading workout sessions.</p>}
+      {workouts.isPending && <LoadingSkeleton label="Loading workout sessions." shape="rows" />}
       {workouts.isError && <p role="alert">Workout sessions are unavailable. <Button variant="outline" onClick={() => void workouts.refetch()}>Retry loading</Button></p>}
       {workouts.data && history.length === 0 && <p>No completed workouts yet.</p>}
       {history.map(workout => <WorkoutCard key={workout.id} workout={workout} busy={busy} submit={submit} boxed={false} />)}

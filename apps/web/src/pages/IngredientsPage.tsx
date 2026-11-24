@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useState, useSyncExternalStore, type FormEvent } from 'react';
 import { AlertCircle, Check } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -276,7 +277,6 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
       <Button type="button" onClick={() => submit(pending)}>Retry same submission</Button>
       <Button type="button" variant="outline" onClick={() => { setPending(null); void query.refetch(); }}>Review saved records</Button>
     </div>}
-    {query.isPending && <p className="text-sm text-muted-foreground" role="status">Loading {sections[section].toLowerCase()}.</p>}
     {query.isError && <div className="flex flex-wrap items-center gap-3" role="alert">
       <p className={issue}><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Could not load {sections[section].toLowerCase()}.</p>
       <Button type="button" variant="outline" onClick={() => void query.refetch()}>Try again</Button>
@@ -287,6 +287,7 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
       {recipe && <Button type="button" variant="outline" disabled={busy} onClick={() => editRecipe(null)}>Cancel editing</Button>}
       {logging && <RecipeLog key={logging.id} recipe={logging} busy={busy} submit={submit} />}
       <GlassPanel title="Saved recipes" tone="solid">
+      {recipes.isPending && <LoadingSkeleton label="Loading saved recipes." />}
       {recipes.data?.data.length === 0 && <div className="space-y-3"><UnrecordedHatch /><p role="status">No recipes saved yet.</p></div>}
       {recipes.data?.data.map(row => <article key={row.id} className="min-w-0 space-y-3 border-t border-border py-3">
         <h2 className="text-xl font-semibold">{row.name}</h2>
@@ -318,6 +319,7 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
       <PantryForm key={lot?.value.id ?? formVersion} lot={lot?.value ?? null} food={food} revision={lot?.revision ?? revision} busy={busy} submit={submit} />
       {lot && <Button type="button" variant="outline" disabled={busy} onClick={() => editLot(null)}>Cancel editing</Button>}
       <GlassPanel title="Pantry lots" tone="solid">
+      {pantry.isPending && <LoadingSkeleton label="Loading pantry lots." />}
       {pantry.data?.data.items.length === 0 && <div className="space-y-3"><UnrecordedHatch /><p role="status">No pantry lots saved yet.</p></div>}
       {pantry.data?.data.items.map(row => <article key={row.id} className="min-w-0 space-y-3 border-t border-border py-3">
         <h2 className="text-lg font-semibold">{row.foodName}</h2>
@@ -338,6 +340,7 @@ function PrivateIngredients({ session, owner }: { session: Session; owner: strin
     {section === 'prices' && <>
       <PriceForm key={formVersion} food={food} busy={busy} submit={submit} />
       <GlassPanel title="Recorded prices" tone="solid">
+      {prices.isPending && <LoadingSkeleton label="Loading recorded prices." shape="ledger" />}
       {prices.data?.data.length === 0 && <div className="space-y-3"><UnrecordedHatch /><p role="status">No prices recorded. Ingredient prices are unknown.</p></div>}
       {prices.data?.data.map(row => <article key={row.id} className="min-w-0 space-y-3 border-t border-border py-3">
         <h2 className="text-lg font-semibold">{row.foodName}</h2>

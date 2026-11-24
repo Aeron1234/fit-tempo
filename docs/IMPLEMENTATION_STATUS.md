@@ -1,6 +1,12 @@
 # Fit Tempo implementation status
 
-Updated November 24, 2026 (Asia/Manila).
+Updated November 25, 2026 (Asia/Manila).
+
+## Shared loading skeletons
+
+Added the shadcn Skeleton primitive and shared section patterns for forms, ledgers, tables, lists, charts, camera code, the Day strip and the weekly agenda. Lazy Activity and Analytics keep the protected navigation and reserve space for their cards. Sign-in and registration are usable immediately, and the protected identity check displays a neutral loading page.
+
+The web suite passed 36 tests, including static lazy fallback rendering and deferred query tests with synthetic data for initial loads, background refresh, empty and error responses, and owner isolation. Root typecheck, lint and build passed. A saved browser permission denied access to localhost:5173. Interactive lazy navigation, overflow and layout shift checks at 320px, 390px, tablet and desktop in both themes remain open. See [loading states](DESIGN_SYSTEM.md#loading-states) for the route inventory.
 
 ## Nutrition targets
 

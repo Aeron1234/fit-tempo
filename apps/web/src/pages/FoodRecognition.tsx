@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { GlassPanel } from '@/components/shared/GlassPanel'
 import { FormValuePicker } from '@/components/shared/FormValuePicker'
 import { ValuePicker } from '@/components/shared/ValuePicker'
@@ -114,7 +115,7 @@ function RecognitionReview({ session, owner }: { session: Session; owner: string
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     <GlassPanel tone="solid"><div className="space-y-3">
-    {capability.isPending && <p role="status">Checking recognition availability.</p>}
+    {capability.isPending && <LoadingSkeleton label="Checking sample recognition availability." shape="form" count={1} />}
     {capability.isError && <p role="alert">Recognition availability could not be checked. <Button variant="outline" onClick={() => void capability.refetch()}>Retry</Button></p>}
     {capability.data?.data.enabled === false && <p>Food recognition is off in this environment.</p>}
     {capability.data?.data.enabled && <form className="space-y-3" onSubmit={event => {
@@ -123,7 +124,6 @@ function RecognitionReview({ session, owner }: { session: Session; owner: string
       if (!fixture) return;
       setError('');
       setNotice('');
-      setCandidates([]);
       recognition.mutate(fixture.id);
     }}>
       <ValuePicker label="Sample image" name="fixture" required value={fixture?.id ?? ''} onValueChange={setFixtureSelection}
@@ -180,7 +180,8 @@ function RecognitionReview({ session, owner }: { session: Session; owner: string
         options={mealTypeSchema.options.map(value => ({ value, label: value }))} />
       {timeZone ? <label className="grid gap-1">Date and time ({timeZone})<input required type="datetime-local" name="time" className={field}
         defaultValue={mealWallTime(new Date().toISOString(), timeZone)} /></label> :
-        <p role="status">{preferences.isError ? 'Your time zone is unavailable. Try again from Meals.' : 'Loading your time zone.'}</p>}
+        preferences.isPending ? <LoadingSkeleton label="Loading meal date and time." shape="form" count={1} /> :
+          <p role="alert">Your time zone is unavailable. Try again from Meals.</p>}
       <Button type="submit" disabled={!timeZone}>Review meal</Button>
     </form></GlassPanel>}
     {reviewed && <GlassPanel title="Confirm reviewed meal" tone="solid"><div className="space-y-3">

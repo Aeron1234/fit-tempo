@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { GlassPanel } from '@/components/shared/GlassPanel'
 import { FormValuePicker } from '@/components/shared/FormValuePicker'
 import { ValuePicker } from '@/components/shared/ValuePicker'
@@ -173,7 +174,7 @@ function AdminSection({ session, owner, tab }: { session: Session; owner: string
     setEditing(item)
   }
   return <GlassPanel title={tabs.find(item => item.id === tab)?.label} tone="solid"><div className="space-y-4">
-    {query.isPending && <p role="status">Loading…</p>}
+    {query.isPending && <LoadingSkeleton label="Loading admin records." shape={tab === 'statistics' ? 'ledger' : 'table'} />}
     {query.isError && <div role="alert" className="space-y-2">
       <p>This section could not be loaded.</p>
       <Button type="button" variant="outline" onClick={() => void query.refetch()}>Try again</Button>

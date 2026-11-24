@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm, useWatch, type UseFormReturn } from 'react-hook-form';
@@ -386,7 +387,7 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
         </label>
         {day && <p className="text-sm text-muted-foreground self-end pb-2">Recorded day time zone: {day.timeZone}</p>}
       </div>
-      {!day && query.isFetching && <GlassPanel title="Meal history" tone="solid"><p className="text-sm" role="status">Loading meals...</p></GlassPanel>}
+      {!day && query.isPending && query.isFetching && <GlassPanel title="Meal history" tone="solid"><LoadingSkeleton label="Loading meal history." shape="rows" /></GlassPanel>}
       {query.isError && <GlassPanel title="Meal history unavailable" tone="solid"><div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-destructive">
         <p className="flex items-start gap-2"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Meal history could not be loaded.</p>
         <Button type="button" variant="outline" onClick={() => void query.refetch()}>Try again</Button>
@@ -432,7 +433,6 @@ function MealsForOwner({ session, owner }: { session: Session; owner: string }) 
         </div>
       </div></GlassPanel>}
       {day && <GlassPanel tone="solid"><div className="min-w-0 space-y-4" aria-label="Meal history">
-        {query.isFetching && <p className="text-sm" role="status">Loading meals...</p>}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">Meal history</h2>

@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ValuePicker } from '@/components/shared/ValuePicker'
 import { GlassPanel } from '@/components/shared/GlassPanel'
 import { lazy, Suspense, useState, useSyncExternalStore } from 'react'
@@ -150,7 +151,7 @@ function FoodCatalog({ session, owner }: { session: Session; owner: string }) {
       <div className="mt-3">
         <CameraDialog title="Scan a product barcode" action="Scan barcode"
           description="Use the rear camera to read the barcode. Only the barcode is sent for lookup.">
-          {close => <Suspense fallback={<p role="status">Loading scanner.</p>}>
+          {close => <Suspense fallback={<LoadingSkeleton label="Loading barcode scanner." shape="camera" />}>
             <BarcodeCamera onBarcode={code => {
               close()
               setMode('barcode')
@@ -161,7 +162,7 @@ function FoodCatalog({ session, owner }: { session: Session; owner: string }) {
         </CameraDialog>
       </div></GlassPanel>
       {Boolean(path) && <GlassPanel title="Search results" tone="solid"><div className="space-y-3">
-      {result.isFetching && <p className="text-sm text-muted-foreground" role="status">Looking up foods...</p>}
+      {result.isPending && result.isFetching && <LoadingSkeleton label="Looking up foods." shape="table" />}
       {result.isError && <p className="flex gap-2 text-sm text-destructive" role="alert"><AlertCircle size={16} className="shrink-0" aria-hidden="true" />Lookup failed. You can add the food manually below.</p>}
       {result.data?.meta.status === 'not_found' && <div className="space-y-3">
         <UnrecordedHatch />

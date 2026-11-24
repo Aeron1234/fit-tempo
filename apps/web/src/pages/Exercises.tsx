@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ValuePicker } from '@/components/shared/ValuePicker'
 import { GlassPanel } from '@/components/shared/GlassPanel'
 import { useState, useSyncExternalStore, type FormEvent } from 'react'
@@ -222,7 +223,6 @@ function PrivateExercises({ session, owner }: { session: Session; owner: string 
   return <div className="tempo-card-grid min-w-0">
     <header><h1 className="text-3xl font-semibold tracking-tight">Exercises and routines</h1>
       <p className="mt-2 text-muted-foreground">Browse the exercise catalog and build routines with ordered targets.</p></header>
-    {(catalog.isPending || routines.isPending) && <p role="status">Loading exercises and routines.</p>}
     {(catalog.isError || routines.isError || error) && <div className="space-y-2">
       <p role="alert" className="text-destructive">{error || 'Exercises or routines are unavailable.'}</p>
       <Button variant="outline" onClick={() => { setError(''); void catalog.refetch(); void routines.refetch() }}>Reload lists</Button>
@@ -235,6 +235,7 @@ function PrivateExercises({ session, owner }: { session: Session; owner: string 
       </div>
       {editor?.kind === 'exercise' && (!editor.id || exercise) && <ExerciseForm key={editor.id ?? 'new-exercise'}
         exercise={exercise} measurementLocked={measurementLocked} busy={writer.isPending} submit={submit} cancel={() => setEditor(null)} />}
+      {catalog.isPending && <LoadingSkeleton label="Loading exercise catalog." shape="rows" />}
       {catalog.data?.data.length === 0 && <p>No exercises available. Add an exercise to start a routine.</p>}
       <ul className="divide-y divide-border">{exercises.map(item => <li key={item.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
         <div className="min-w-0 break-words"><h3 className="font-semibold">{item.name}</h3>
@@ -250,6 +251,7 @@ function PrivateExercises({ session, owner }: { session: Session; owner: string 
       </div>
       {editor?.kind === 'routine' && (!editor.id || routine) && <RoutineForm key={editor.id ?? 'new-routine'}
         routine={routine} catalog={exercises} busy={writer.isPending} submit={submit} cancel={() => setEditor(null)} />}
+      {routines.isPending && <LoadingSkeleton label="Loading routines." shape="rows" />}
       {routines.data?.data.length === 0 && <p>No routines available.</p>}
       {routines.data?.data.map(item => <article className="space-y-2 border-t border-border py-3" key={item.id}>
         <div className="flex flex-wrap items-start justify-between gap-2"><div>

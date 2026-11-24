@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
@@ -194,7 +195,7 @@ export function NutritionTargets({ session, owner }: { session: Session; owner: 
 
   return <GlassPanel title="Nutrition targets" tone="solid">
     <div className="space-y-4">
-      {targets.isPending && <p role="status">Loading nutrition targets.</p>}
+      {targets.isPending && <LoadingSkeleton label="Loading nutrition targets." shape="ledger" count={4} />}
       {targets.isError && <div role="alert" className="space-y-2">
         <p>Could not load nutrition targets.</p>
         <Button variant="outline" onClick={() => void targets.refetch()}>Try again</Button>
@@ -202,7 +203,7 @@ export function NutritionTargets({ session, owner }: { session: Session; owner: 
       {active && <div className="space-y-2">
         <p>Latest saved targets effective {active.effectiveFrom}.</p>
         {hasNewerWeight && <p className="text-sm">A newer weight was logged on {saved.latestWeight?.localDate}. You can recalculate and compare targets before saving.</p>}
-        {progress.isPending && <p role="status">Loading today’s nutrition.</p>}
+        {progress.isPending && <LoadingSkeleton label="Loading today’s nutrition." shape="ledger" count={4} />}
         {progress.isError && <p role="status">Today’s nutrition progress is unavailable.</p>}
         {day && saved?.localDate === day.date && !dayTarget && <p className="text-sm">No targets apply to {day.date}.</p>}
         {day && dayTarget && <p className="text-sm">
@@ -243,7 +244,7 @@ export function NutritionTargets({ session, owner }: { session: Session; owner: 
         }}>{saved.targets ? 'Edit targets manually' : 'Enter targets manually'}</Button>
       </div>}
       {saved && estimating && <>
-        {profile.isPending ? <p role="status">Loading saved height.</p> :
+        {profile.isPending ? <LoadingSkeleton label="Loading saved measurements." shape="form" count={2} /> :
           <EstimateForm height={profile.data?.data.heightCm} weight={saved.latestWeight}
             onEstimate={estimate => {
               setEstimating(false)

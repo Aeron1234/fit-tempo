@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useState, useSyncExternalStore, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { activityResponseSchema, measurementsResponseSchema, weightResponseSchema, workoutSessionsResponseSchema } from '@fit-tempo/contracts';
@@ -163,7 +164,7 @@ function Tracking({ session, owner }: { session: Session; owner: string }) {
       </form></GlassPanel>
     </div>
     <GlassPanel title="Activity history">
-      {activity.isPending && <p role="status">Loading activity history.</p>}
+      {activity.isPending && <LoadingSkeleton label="Loading activity history." shape="rows" />}
       {activity.isError && <p role="alert">Activity history is unavailable.</p>}
       {activity.data && (() => {
         const { entries, totals } = activity.data.data;
@@ -180,11 +181,11 @@ function Tracking({ session, owner }: { session: Session; owner: string }) {
     <div className="grid items-start gap-4 md:gap-5 lg:grid-cols-2">
       {activity.data && <Trend title="Standalone activity observations" unit="m" from={activity.data.data.from} to={activity.data.data.to}
         points={activity.data.data.entries.flatMap(item => item.source === 'manual' && item.distanceMeters !== null ? [{ date: item.localDate, value: item.distanceMeters }] : [])} />}
-      {weight.isPending && <GlassPanel title="Weight trend" tone="solid"><UnrecordedHatch /><p role="status">Loading weight history.</p></GlassPanel>}
+      {weight.isPending && <GlassPanel title="Weight trend" tone="solid"><LoadingSkeleton label="Loading weight history." shape="chart" /></GlassPanel>}
       {weight.isError && <GlassPanel title="Weight trend" tone="solid"><p role="alert">Weight history is unavailable.</p></GlassPanel>}
       {weight.data && <Trend title="Recorded weight" unit="kg" from={weight.data.data.from} to={weight.data.data.to}
         points={weight.data.data.entries.map(item => ({ date: item.localDate, value: item.weightKg }))} />}
-      {measurements.isPending && <GlassPanel title="Measurement trends" tone="solid"><UnrecordedHatch /><p role="status">Loading measurement history.</p></GlassPanel>}
+      {measurements.isPending && <GlassPanel title="Measurement trends" tone="solid"><LoadingSkeleton label="Loading measurement history." shape="chart" /></GlassPanel>}
       {measurements.isError && <GlassPanel title="Measurement trends" tone="solid"><p role="alert">Measurement history is unavailable.</p></GlassPanel>}
       {measurements.data && (measurementsByType.size
         ? [...measurementsByType].map(([type, points]) => <Trend key={type} title={type} unit="cm" from={measurements.data.data.from} to={measurements.data.data.to} points={points} />)

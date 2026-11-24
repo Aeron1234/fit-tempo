@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -115,7 +116,7 @@ function PrivatePlanner({ session, owner }: { session: Session; owner: string })
     {error && <p role="alert" className="flex gap-2 text-sm text-destructive"><AlertCircle className="shrink-0" size={18} aria-hidden="true" />{error}</p>}
     {notice && <p role="status" className="flex gap-2 text-sm text-success"><Check className="shrink-0" size={18} aria-hidden="true" />{notice}</p>}
     {pending && <Button type="button" disabled={write.isPending} onClick={() => submit(pending)}>Retry same operation</Button>}
-    {pantry.isPending && <p role="status">Loading pantry revision.</p>}
+    {pantry.isPending && <LoadingSkeleton label="Loading pantry availability." shape="ledger" count={1} />}
     {(pantry.isError || recipes.isError) && <div role="alert" className="space-y-2"><p>Pantry or recipe data is unavailable.</p><Button variant="outline" onClick={() => { void pantry.refetch(); void recipes.refetch(); }}>Reload ingredients</Button></div>}
     <GlassPanel tone="solid"><form className="space-y-4" onSubmit={event => {
       event.preventDefault();
@@ -161,14 +162,14 @@ function PrivatePlanner({ session, owner }: { session: Session; owner: string })
     </section>}
     <GlassPanel title="Saved plans and shopping lists" tone="solid"><div className="space-y-5">
       <p className="text-sm text-muted-foreground">Showing up to 100 most recent saved plans and 100 shopping items. Older shopping items may be outside this view.</p>
-      {plans.isPending && <p role="status">Loading saved plans.</p>}
+      {plans.isPending && <LoadingSkeleton label="Loading saved plans." shape="rows" />}
       {plans.isError && <div role="alert"><p>Saved plans are unavailable.</p><Button variant="outline" onClick={() => void plans.refetch()}>Reload saved plans</Button></div>}
       {plans.data?.data.length === 0 && <p>No plans saved yet. Review a suggestion first.</p>}
       {plans.data?.data.map(plan => <article key={plan.id} className="space-y-4 border-t border-border pt-4"><PlanEstimate estimate={plan.estimate} />
         <p className="text-sm text-muted-foreground">Saved estimate · {plan.createdAt.slice(0, 10)} · Pantry revision {plan.estimate.pantryRevision}</p>
         <h3 className="font-semibold">Shopping checklist</h3>
         <p className="text-sm text-muted-foreground">Marking a purchase changes this checklist only. Add purchased stock through Pantry separately.</p>
-        {shopping.isPending && <p role="status">Loading shopping checklist.</p>}
+        {shopping.isPending && <LoadingSkeleton label="Loading shopping checklist." shape="ledger" />}
         {shopping.isError && <div role="alert"><p>Shopping checklist is unavailable.</p><Button variant="outline" onClick={() => void shopping.refetch()}>Reload shopping checklist</Button></div>}
         {shopping.data && !shopping.data.data.some(item => item.mealPlanId === plan.id) && <p className="text-sm">No shopping items for this plan in the current view. Review the saved shortage estimate above.</p>}
         {shopping.data?.data.filter(item => item.mealPlanId === plan.id).map(item => <label key={item.id} className="flex min-h-11 items-center gap-3 text-sm">

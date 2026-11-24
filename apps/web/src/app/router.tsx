@@ -20,7 +20,7 @@ import { PlannerPage } from '@/pages/Planner'
 import { MealsPage } from '@/pages/MealsPage'
 import { AccountTheme } from '@/app/AccountTheme'
 import type { Session } from '@/lib/api/session'
-import { GlassPanel } from '@/components/shared/GlassPanel'
+import { LazyRouteSkeleton } from '@/components/shared/LoadingSkeleton'
 
 const AnalyticsPage = lazy(() => import('@/pages/Analytics').then(module => ({ default: module.AnalyticsPage })))
 const ActivityProgressPage = lazy(() => import('@/pages/ActivityProgress').then(module => ({ default: module.ActivityProgressPage })))
@@ -46,11 +46,11 @@ export function createAppRouter(session: Session) {
           { path: '/app/meals', element: <MealsPage session={session} /> },
           { path: '/app/ingredients', element: <IngredientsPage session={session} /> },
           { path: '/app/food-recognition', element: <FoodRecognitionPage session={session} /> },
-          { path: '/app/analytics', element: <Suspense fallback={<GlassPanel title="Weekly analytics" tone="solid"><p role="status">Loading weekly analytics.</p></GlassPanel>}>
+          { path: '/app/analytics', element: <Suspense fallback={<LazyRouteSkeleton />}>
             <AnalyticsPage session={session} />
           </Suspense> },
           { path: '/app/goals', element: <GoalsPage session={session} /> },
-          { path: '/app/activity', element: <Suspense fallback={<GlassPanel title="Activity and progress" tone="solid"><p role="status">Loading activity and progress.</p></GlassPanel>}>
+          { path: '/app/activity', element: <Suspense fallback={<LazyRouteSkeleton activity />}>
             <ActivityProgressPage session={session} />
           </Suspense> },
           { path: '/app/week', element: <FitMyWeekPage session={session} /> },

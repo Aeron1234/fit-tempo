@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { hydrationGoalResponseSchema, hydrationGoalsResponseSchema, positiveDecimalSchema, waterEntryResponseSchema, waterResponseSchema } from '@fit-tempo/contracts'
@@ -73,7 +74,8 @@ function PersonalGoals({ session, owner }: { session: Session; owner: string }) 
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {retry && <Button onClick={() => submit(retry)} disabled={write.isPending}>Retry the same water entry</Button>}
     {(water.isError || goals.isError) && <p role="alert">Tracking data could not be loaded. <Button variant="outline" onClick={() => { void water.refetch(); void goals.refetch() }}>Retry</Button></p>}
-    {(water.isPending || goals.isPending) && <p role="status">Loading hydration and goals.</p>}
+    {water.isPending && <GlassPanel tone="solid" title="Log water"><LoadingSkeleton label="Loading water entries." shape="form" count={2} /></GlassPanel>}
+    {goals.isPending && <GlassPanel tone="solid" title="Goal progress"><LoadingSkeleton label="Loading hydration goals." shape="ledger" /></GlassPanel>}
     {day && <>
       <label className="flex flex-wrap items-center gap-2">Date <input type="date" className={field} value={date || day.date} onChange={event => { setEditing(null); setDate(event.target.value) }} /></label>
 

@@ -29,6 +29,8 @@ The root build orders contracts before API/web. Verified root commands are `npm.
 
 ## UI conventions
 
+Use the shared shadcn Skeleton through `LoadingSkeleton` for initial section data and lazy modules. Keep cached authorized content during background refresh. Preserve form/action feedback for submissions and the neutral protected-session fallback. See [Loading states](docs/DESIGN_SYSTEM.md#loading-states) for the route audit.
+
 For failure states, follow the [frontend error guide](docs/FRONTEND_ERRORS.md) and [backend error guide](docs/BACKEND_ERRORS.md). Use plain-language recovery actions and preserve existing confirmation, account isolation, and retry receipt semantics.
 
 Reuse the shared solid theme canvas. Use `GlassPanel` for section cards with flat Day strip and ledger contents. Use solid cards for forms and tables, and cap visible glass at five surfaces including navigation and overlays. Put the current task first and disclose secondary details in place. Reuse the shared chart and picker primitives. Add new destinations to the shared navigation config, default them to More, and keep the mobile bar at five slots or fewer.

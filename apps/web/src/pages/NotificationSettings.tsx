@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -133,7 +134,7 @@ function OwnedSettings({ session, owner }: { session: Session; owner: string }) 
   const conflict = mutation.error && 'status' in mutation.error && mutation.error.status === 409
   return <div className="grid gap-4 md:gap-5">
     <h1 className="text-3xl font-semibold tracking-tight">Email notifications</h1>
-    {query.isPending && <GlassPanel tone="solid" title="Optional emails"><p role="status">Loading email settings…</p></GlassPanel>}
+    {query.isPending && <GlassPanel tone="solid" title="Optional emails"><LoadingSkeleton label="Loading email settings." shape="form" /></GlassPanel>}
     {query.isError && <GlassPanel tone="solid" title="Optional emails"><div role="alert" className="space-y-3">
       <p>Email settings could not be loaded.</p>
       <Button type="button" variant="outline" onClick={() => void query.refetch()}>Try again</Button>

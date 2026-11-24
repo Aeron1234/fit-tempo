@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useRef, useState, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -65,7 +66,7 @@ function DashboardStrip({ session, owner, date, timeZone, state }: {
   const failed = pages.find(page => page.isError);
   const next = pages.at(-1)?.data?.data.nextCursor;
   if (failed) return <GlassPanel title="Day strip"><div role="alert">Meal times are unavailable. <Button type="button" variant="outline" onClick={() => void failed.refetch()}>Try again</Button></div></GlassPanel>;
-  if (pages.some(page => page.isPending)) return <GlassPanel title="Day strip"><p role="status">Loading meal times.</p></GlassPanel>;
+  if (pages.some(page => page.isPending)) return <GlassPanel title="Day strip"><LoadingSkeleton label="Loading meal times." shape="strip" count={4} /></GlassPanel>;
   if (next) return <GlassPanel title="Day strip"><div className="space-y-2">
     <p>More meals are recorded for this day.</p>
     <Button type="button" variant="outline" onClick={() => setCursors(values => [...values, next])}>Load more meal times</Button>
@@ -87,7 +88,8 @@ function DashboardWater({ session, owner, date }: { session: Session; owner: str
   });
   const total = water.data?.data.totalMl;
   return <GlassPanel title="Hydration" tone="solid" action={<Link className="inline-flex min-h-11 items-center text-sm text-accent underline" to="/app/goals">Log water</Link>}>
-    <p>{water.isPending ? 'Loading water entries…' : water.isError ? 'Water entries unavailable.' : total == null ? 'No water recorded for this day.' : total + ' mL recorded'}</p>
+    {water.isPending ? <LoadingSkeleton label="Loading water entries." shape="ledger" count={1} /> :
+      <p>{water.isError ? 'Water entries unavailable.' : total == null ? 'No water recorded for this day.' : total + ' mL recorded'}</p>}
   </GlassPanel>;
 }
 
@@ -109,7 +111,9 @@ export function DashboardPage({ session }: { session: Session }) {
         {response && !dashboard.isPlaceholderData && <p role="status" className="text-sm text-muted-foreground">{daySummary[response.data.status]}</p>}
         <Button asChild><Link to="/app/meals">Log a meal</Link></Button>
       </header>
-      {(dashboard.isPending || dashboard.isPlaceholderData) && <GlassPanel title="Nutrition"><p role="status">Loading nutrition.</p></GlassPanel>}
+      {owner && !response && dashboard.isPending && <div className="max-w-60">
+        <LoadingSkeleton label="Loading date controls." shape="form" count={1} />
+      </div>}
       {dashboard.isError && (
         <GlassPanel title="Nutrition"><div role="alert" className="text-sm space-y-3">
           <p>Nutrition could not be loaded.</p>
@@ -160,6 +164,13 @@ export function DashboardPage({ session }: { session: Session }) {
           )}
         </>
       )}
+      {owner && (dashboard.isPending || dashboard.isPlaceholderData) && <>
+        {response?.meta.mode !== 'synthetic-demo' && <GlassPanel title="Day strip"><LoadingSkeleton label="Loading your day." shape="strip" count={4} /></GlassPanel>}
+        <div className="tempo-dashboard-panels">
+          <GlassPanel title="Nutrition"><LoadingSkeleton label="Loading nutrition." shape="ledger" count={2} /></GlassPanel>
+          {response?.meta.mode !== 'synthetic-demo' && <GlassPanel title="Hydration" tone="solid"><LoadingSkeleton label="Loading hydration." shape="ledger" count={1} /></GlassPanel>}
+        </div>
+      </>}
       <details>
         <summary className={summaryStyle}>More about your day</summary>
         <div className="flex flex-wrap gap-x-4">
@@ -283,7 +294,7 @@ export function ProfilePage({ session }: { session: Session }) {
 
       <div className="grid items-start gap-4 md:gap-5 lg:grid-cols-2">
         <GlassPanel title="Profile" tone="solid">
-          {profileQuery.isPending && <p role="status">Loading profile.</p>}
+          {profileQuery.isPending && <LoadingSkeleton label="Loading profile." shape="form" count={2} />}
           {profileQuery.isError && <div role="alert" className="space-y-2">
             <p>Profile settings could not be loaded.</p>
             <Button type="button" variant="outline" onClick={() => void profileQuery.refetch()}>Try again</Button>
@@ -291,7 +302,7 @@ export function ProfilePage({ session }: { session: Session }) {
           {profileQuery.data && <ProfileForm value={profileQuery.data.data} busy={updateProfile.isPending} save={updateProfile.mutateAsync} />}
         </GlassPanel>
         <GlassPanel title="Preferences" tone="solid">
-          {preferencesQuery.isPending && <p role="status">Loading preferences.</p>}
+          {preferencesQuery.isPending && <LoadingSkeleton label="Loading preferences." shape="form" />}
           {preferencesQuery.isError && <div role="alert" className="space-y-2">
             <p>Preferences could not be loaded.</p>
             <Button type="button" variant="outline" onClick={() => void preferencesQuery.refetch()}>Try again</Button>

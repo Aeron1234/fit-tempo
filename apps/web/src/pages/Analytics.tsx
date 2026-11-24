@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { useState, useSyncExternalStore, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { analyticsResponseSchema, type AnalyticsWeek } from '@fit-tempo/contracts'
@@ -103,7 +104,13 @@ function PrivateAnalytics({ owner, session }: { owner: string; session: Session 
       {weekStart && <Button type="button" variant="outline" onClick={() => { setError(''); setWeekStart('') }}>Latest complete week</Button>}
     </form>
     {error && <p role="alert" className="text-destructive">{error}</p>}
-    {query.isPending && <GlassPanel title="Week comparison" tone="solid"><UnrecordedHatch /><p role="status">Loading weekly metrics.</p></GlassPanel>}
+    {query.isPending && <>
+      <GlassPanel title="Week comparison"><LoadingSkeleton label="Loading weekly metrics." shape="ledger" count={6} /></GlassPanel>
+      <div className="tempo-dashboard-panels">
+        <GlassPanel title="Nutrition by date" tone="solid"><LoadingSkeleton label="Loading nutrition trend." shape="chart" /></GlassPanel>
+        <GlassPanel title="Hydration by date" tone="solid"><LoadingSkeleton label="Loading hydration trend." shape="chart" /></GlassPanel>
+      </div>
+    </>}
     {query.isError && <GlassPanel title="Week comparison" tone="solid"><p role="alert" className="text-destructive">{query.error instanceof Error ? query.error.message : 'Weekly metrics are unavailable.'}</p></GlassPanel>}
     {result && <>
       <p className="text-sm text-muted-foreground">Week boundaries use {result.timeZone}. Nutrition and water averages use their logged days. Missing nutrient values are excluded from the known subtotal.</p>

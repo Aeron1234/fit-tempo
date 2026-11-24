@@ -1,3 +1,4 @@
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { CameraDialog } from '@/components/shared/CameraDialog';
 import { ProductPhotoFrame } from '@/components/shared/ProductPhotoFrame';
@@ -51,7 +52,7 @@ function Capture({ done }: { done: (draft: LabelDraft) => void }) {
       }}>Analyze</Button>
     </div>
   </> : <>
-    <Suspense fallback={<p role="status">Loading camera.</p>}>
+    <Suspense fallback={<LoadingSkeleton label="Loading product camera." shape="camera" />}>
       <ProductPhotoCamera onCapture={preview => setPhoto({ kind: 'camera', preview })}
         onSample={() => setPhoto({ kind: 'sample' })} />
     </Suspense>

@@ -696,16 +696,18 @@
     transition: background-color 120ms;
   }
   .tempo-mobile-icon > svg { width: 22px; height: 22px; }
-  .tempo-more-sheet::backdrop { background: color-mix(in srgb, var(--rail) 28%, transparent); }
-  .tempo-picker-sheet:modal {
+  :is(.tempo-more-sheet, .tempo-picker-sheet):modal {
     overscroll-behavior: contain;
+  }
+  .tempo-picker-sheet:modal {
     max-height: 85dvh;
   }
-  .tempo-picker-sheet::backdrop {
+  :is(.tempo-more-sheet, .tempo-picker-sheet)::backdrop {
     overflow: hidden;
     overscroll-behavior: contain;
     background: color-mix(in srgb, var(--rail) 28%, transparent);
   }
+  .tempo-more-sheet::backdrop { touch-action: none; }
   :is(.tempo-mobile-slot, .tempo-mobile-link):is([aria-current="page"],[data-current="true"]) .tempo-mobile-icon {
     background: var(--primary);
     color: var(--primary-foreground);

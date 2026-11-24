@@ -253,6 +253,8 @@ Example: POST meals -> session/CSRF/quota -> Zod -> meal service -> owned food/r
 
 User-facing failure recovery follows the [frontend error guide](docs/FRONTEND_ERRORS.md). The [backend error guide](docs/BACKEND_ERRORS.md) documents the existing error envelope and proposed middleware fixes. Keep authentication, resource visibility, and retry receipts authoritative when designing recovery actions.
 
+Shared shadcn loading skeletons follow the [design system loading conventions](docs/DESIGN_SYSTEM.md#loading-states). Place them at section and lazy route boundaries so authorized cached results and ready controls remain visible during background requests.
+
 Fit Tempo uses a full-viewport solid theme canvas, ink-navy navigation, tempo-orange accents, a Day strip and flat ledger rows. Use GlassPanel as the shared section frame. Read-only summaries can use glass within the visible surface limit. Forms, tables and editable fields use solid cards. Put primary actions and decision information first, and disclose secondary details in place. Use the shared chart frame and picker primitives while preserving dates, units, unknown values and confirmation boundaries. The route config drives the rail and More sheet, with no more than five slots in the mobile bar. See [the design system](docs/DESIGN_SYSTEM.md).
 
 ```text

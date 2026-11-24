@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { LoadingSkeleton } from './LoadingSkeleton'
 import * as Popover from '@radix-ui/react-popover'
 import * as Select from '@radix-ui/react-select'
 import { Command } from 'cmdk'
@@ -94,7 +95,7 @@ function SearchPicker({ id, labelId, describedBy, selected, placeholder, invalid
         className="tempo-field w-auto shrink-0 font-semibold">Search</button>}
     </div>
     {props.error != null && <p role="alert" className="px-2 text-sm text-destructive">{props.error}</p>}
-    {props.loading && <p role="status" className="px-2 text-sm text-muted-foreground">Loading options…</p>}
+    {props.loading && props.options.length === 0 && <LoadingSkeleton label="Loading options." shape="ledger" />}
     <Command.List aria-label={props.label} className="max-h-[min(48dvh,18rem)] overflow-y-auto overscroll-contain p-1">
       {!props.loading && <Command.Empty className="px-3 py-2 text-sm text-muted-foreground">{props.emptyMessage ?? 'No matching options.'}</Command.Empty>}
       {props.options.map(option => <Command.Item key={option.value} value={code(option.value)} keywords={[option.label]}

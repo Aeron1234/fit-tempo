@@ -181,3 +181,22 @@ The current canvas is solid. Chart token contrast against solid cards ranges fro
 ChartCard shares a solid chart surface and coverage footer. Existing date gaps and recorded zeroes have text equivalents. Use the accessible Recharts layer, exact data and units in tooltips, and static series. Keep legends or explicit series labels visible and avoid communicating states by color alone.
 
 The shared Select and Combobox retain controlled values and form names where used. Search appears first in a native mobile sheet and in a Radix desktop popover. DropdownMenu groups secondary recipe actions. The More sheet and navigation are unchanged. Preserve 44px targets for primary controls. The existing dense Day strip markers remain 32px with their existing textual event equivalent.
+## Loading states
+
+Use the shadcn `Skeleton` primitive through `LoadingSkeleton` for sections that need a placeholder while data or code loads. Use the same card, layout, and approximate dimensions as the ready section. Keep headings, navigation, and unaffected controls visible. Limit rows to a representative sample. Use the chart's height without drawing data.
+
+Each loading region has `aria-busy` and one concise status outside the busy subtree. Decorative shapes are hidden from assistive technology. The pulse runs only with motion enabled. Show placeholders only when a section lacks usable data. Keep authorized cached content through background refresh, and let errors and empty results take over when a request settles. For saves, scans, and analysis, keep the current form or results and show progress beside the action.
+
+| Surface | Loading coverage |
+| --- | --- |
+| Today | Date control, Day strip, nutrition ledger, hydration |
+| Meals and Food | Meal history, lookup table, saved-food picker, lazy barcode scanner |
+| Recipes and Pantry | Saved recipes, pantry lots, recorded prices, saved-food picker |
+| Meal Planner | Pantry availability, saved plans, shopping checklist, action feedback for finding suggestions |
+| Exercises and Workouts | Exercise catalog, routines, sessions and history |
+| Fit My Week | Seven agenda rows at phone and desktop widths, availability editor, routine picker |
+| Activity and Analytics | Lazy route shells, activity history, chart-height placeholders and weekly comparison |
+| Goals | Independent hydration, goal progress, nutrition targets, estimate measurements and daily progress |
+| Food Recognition | Sample availability, meal time field, lazy product camera and action-level analysis progress |
+| Settings, Notifications and Admin | Profile and preference forms, optional email settings, statistics ledger and record tables |
+| Public and account | Neutral protected session check and development preview health check. Sign-in, registration, recovery, verification confirmation and route errors render their controls immediately. |
