@@ -19,6 +19,9 @@ const lockName = 'fit-tempo-session'
 const unavailable = 'The session could not be checked. Please try again.'
 
 function send(path: string, options: RequestInit = {}) {
+  if (typeof window !== 'undefined' && !navigator.onLine) {
+    return Promise.reject(new Error('You’re offline. Reconnect to use Fit Tempo.'))
+  }
   const headers = new Headers(options.headers)
   headers.set('Accept', 'application/json')
   return fetch(`${apiBase}${path}`, {

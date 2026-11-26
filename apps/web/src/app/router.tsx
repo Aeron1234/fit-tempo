@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
+import { LandingPage } from '@/pages/LandingPage'
 import { ScaffoldPage } from '@/pages/ScaffoldPage'
 import { RouteErrorPage } from '@/pages/RouteErrorPage'
 import {
@@ -29,7 +30,7 @@ export function createAppRouter(session: Session) {
   return createBrowserRouter([{
     errorElement: <RouteErrorPage />,
     children: [
-      { path: '/', element: <Navigate to="/app" replace /> },
+      { path: '/', element: <LandingPage /> },
       { path: '/sign-in', element: <SignInPage session={session} /> },
       { path: '/register', element: <RegisterPage session={session} /> },
       { path: '/verify-email', element: <VerifyEmailPage session={session} /> },

@@ -672,3 +672,16 @@ Verification. Typecheck, lint, production build and all 29 existing web checks p
 ## Error UX review
 
 Source review identified a shared fallback for missing routes and route failures, incomplete propagation of API error metadata to the UI, and JSON parsing before API request ID assignment. The frontend and backend error guides document current behavior and proposed recovery. See [the implementation prompt](ERROR_UI_PROMPT.md). This was a documentation change. Runtime fixes and verification are pending.
+
+## Installable Fit Tempo web release · November 27, 2026
+
+- Added a public landing page with sample previews for the planner, weekly schedule, meals and workouts. The install action uses the available browser prompt or device instructions. The browser action uses the existing protected app and account routes. Protected links restore their destination after sign-in.
+- Added a standalone manifest, regular and maskable icons, build-generated anonymous shell precache, and default waiting-worker updates. API data and credentials bypass service worker storage. The offline dialog keeps mounted forms in place and blocks server actions while offline.
+- Root typecheck passed. Existing web integration tests passed and new worker and manifest tests passed independently. The production build emitted the worker and versioned assets. See [PWA release](PWA_RELEASE.md).
+- Modern Web Guidance was unavailable in this session. Official Chrome, Apple, web.dev and WebKit documentation supplied installation, cache lifecycle and safe-area guidance.
+- No physical Android or iPhone was available. The desktop Chrome smoke attempt was blocked by local loopback permission. Interactive installation, standalone behavior, both-theme viewport checks, keyboard and dialog behavior, signed-in journeys, offline recovery and two-release updates remain open. Staging and production were not redeployed. The prior staging API startup blocker remains open and the hosted health endpoint could not be confirmed here.
+
+### Photo-led landing page follow-up
+
+- Completed the public landing design with a photo-led hero, a labeled sample dashboard, linked feature cards, a Fit My Week spotlight and the existing installation FAQ. Generated four photos and reused the existing runner image for the workout card. All five are local WebP assets.
+- Root typecheck, lint and production build passed. All 38 web integration tests passed with the TypeScript loader. Static React rendering verified the install control, browser and feature links, and sample label. All five referenced images decoded at 768 × 512 in the production output. The browser preview timed out on the local origin, so interactive layout, theme and install checks remain open.

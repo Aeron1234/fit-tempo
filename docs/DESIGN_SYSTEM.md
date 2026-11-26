@@ -200,3 +200,7 @@ Each loading region has `aria-busy` and one concise status outside the busy subt
 | Food Recognition | Sample availability, meal time field, lazy product camera and action-level analysis progress |
 | Settings, Notifications and Admin | Profile and preference forms, optional email settings, statistics ledger and record tables |
 | Public and account | Neutral protected session check and development preview health check. Sign-in, registration, recovery, verification confirmation and route errors render their controls immediately. |
+
+## Public landing and standalone display
+
+Reuse the solid theme canvas, orange controls with ink labels, and flat rows for the sample dashboard. The landing hero uses a navy photo treatment with high-contrast copy and stacks the preview beneath the actions on small screens. Feature cards and the Fit My Week spotlight use local WebP images with reserved space and decorative images hidden from assistive technology. Keep the public page independent of private account data. Use the existing mobile navigation in standalone display and keep interactive content inside the safe area.

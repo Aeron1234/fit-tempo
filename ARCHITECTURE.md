@@ -6,7 +6,7 @@ Project name: **Fit Tempo**. Use this exact display name in UI copy, email templ
 
 ## 1. Project overview and scope
 
-Build **Fit Tempo**, a responsive **pure web application**, not React Native or a native mobile app. Trainees record meals, nutrients, routines, workouts, activity, water, weight, measurements, and goals. Two differentiators are included: **Pantry and Budget Meal Planner** and **Fit My Week**. Require sign-in for private app features. Admins curate shared food/exercise catalogs and manage account status; authorization is enforced by Express.
+Build **Fit Tempo**, a responsive web application that can also install from its public landing page as a Progressive Web App. Trainees record meals, nutrients, routines, workouts, activity, water, weight, measurements, and goals. Two differentiators are included: **Pantry and Budget Meal Planner** and **Fit My Week**. Require sign-in for private app features. Admins curate shared food/exercise catalogs and manage account status; authorization is enforced by Express.
 
 Use a modular monolith: one React application, one Express API, one PostgreSQL database. Prioritize a small portfolio-ready vertical slice before optional enhancements. No microservices, model training, background wearable integration, medical treatment recommendations, or implied continuous browser activity monitoring.
 
@@ -718,3 +718,7 @@ Reviewed November 16, 2026; recheck changing limits, terms, licenses, package AP
 - [MDN cookie attributes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)
 - [OWASP CSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 
+
+### Installable web release
+
+The same React/Vite deployment exposes the public landing page at / and launches the installed app at /app. Existing account URLs and protected routes remain in the same origin and scope. Web hosting serves the manifest, icons and build-generated service worker alongside the SPA. The service worker caches only anonymous shell HTML and versioned build assets. Accounts, API requests and writes require connectivity. See [PWA release](docs/PWA_RELEASE.md).

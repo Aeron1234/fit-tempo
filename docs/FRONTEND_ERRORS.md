@@ -21,3 +21,7 @@ Use short, feature-specific copy from trusted frontend mappings. Treat non-JSON 
 Use linked field messages and `aria-invalid` for inputs. Announce newly displayed in-place errors once. Move focus to a page heading when navigation replaces the page with an error. Keep retry buttons reachable at 320px, allow messages to wrap, and preserve the solid canvas, theme tokens, and navigation behavior. A validated request ID can be shown as a copyable reference when it helps diagnose an unexpected failure.
 
 See the [implementation prompt](ERROR_UI_PROMPT.md) and [backend error guide](BACKEND_ERRORS.md).
+
+## Offline and standalone
+
+Use the native connection dialog to keep a detected offline state visible and to block interaction with server actions while retaining the mounted form. Keep server requests network only. Use the existing route recovery actions when the device reports a connection but the API cannot be reached. See [PWA release](PWA_RELEASE.md).

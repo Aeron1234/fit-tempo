@@ -50,3 +50,7 @@ Phase 05 migrations applied and integrity/rollback/idempotent rerun passed on th
 Dependency maintenance remains open: ESLint 9 is EOL and the latest user audit reports seven moderate entries in the typescript-eslint/minimatch development-tooling chain. Patched React Router, Vite and Zod removed the reported high findings. Resolve compatible tooling updates before release. Phase 02 live-provider, automatic skill-discovery and executor loopback limitations carry forward. Read `docs/IMPLEMENTATION_STATUS.md` for evidence and stop at the requested phase boundary.
 Phase 07 live verification harness: set FIT_TEMPO_LIVE_STORAGE_TEST=1 and run apps/api/test/storage.http.integration.mjs with both API env files against the disposable migrated database and private test bucket. User-run live verification passed.
 Phase 07 provider checks are runnable via apps/api/test/storage.provider.integration.mjs. Use FIT_TEMPO_LIVE_STORAGE_TEST=1 with the private test bucket. The user ran both provider checks successfully.
+
+### Installable web release
+
+The public landing page at / uses local WebP photography and a labeled sample dashboard. Keep the install and browser actions prominent at phone and desktop widths. The PWA launches at /app and shares existing routes and session boundaries. Keep service worker storage limited to the anonymous shell and versioned build assets. Let waiting workers activate after all current clients close. See [PWA release](docs/PWA_RELEASE.md) for installation and verification.

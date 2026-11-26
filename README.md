@@ -49,3 +49,7 @@ Run `npm run typecheck`, `npm run lint`, `npm run test:contracts`, and `npm run 
 | `database/migrations` | Ordered PostgreSQL migrations |
 
 [Architecture](ARCHITECTURE.md) · [Implementation status](docs/IMPLEMENTATION_STATUS.md)
+
+## Install Fit Tempo
+
+Open the deployed homepage and choose **Install Fit Tempo** or **Open web app**. On iPhone, use Safari's Share menu, choose **Add to Home Screen**, turn on **Open as Web App** if shown, then tap **Add**. Sign in with your Fit Tempo account. See [PWA release](docs/PWA_RELEASE.md) for local production preview, Android instructions and troubleshooting.

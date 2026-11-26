@@ -37,6 +37,7 @@ type FormValues = { email: string; password: string };
 
 function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; token?: string }) {
   const config = forms[mode];
+  const location = useLocation();
   const usesEmailAsUsername = mode === "signIn" || mode === "register";
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   useEffect(() => {
@@ -55,7 +56,10 @@ function AccountForm({ session, mode, token }: SessionProps & { mode: Mode; toke
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
 
-  if (mode === "signIn" && snapshot.status === "authenticated") return <Navigate to="/app" replace />;
+  const returnTo = location.state?.returnTo;
+  if (mode === "signIn" && snapshot.status === "authenticated") {
+    return <Navigate to={typeof returnTo === "string" && /^\/app(?:[/?#]|$)/.test(returnTo) ? returnTo : "/app"} replace />;
+  }
 
   const submit = handleSubmit(async ({ email, password }) => {
     try {
@@ -219,12 +223,15 @@ export function ResetPasswordPage({ session }: SessionProps) {
 }
 
 export function ProtectedLayout({ session }: SessionProps) {
+  const { pathname, search, hash } = useLocation();
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const [signingOut, setSigningOut] = useState(false);
   const [failure, setFailure] = useState("");
   useEffect(() => { void session.initialize(); }, [session]);
 
-  if (snapshot.status === "anonymous") return <Navigate to="/sign-in" replace />;
+  if (snapshot.status === "anonymous") {
+    return <Navigate to="/sign-in" replace state={{ returnTo: pathname + search + hash }} />;
+  }
   if (snapshot.status === "checking") {
     return <AppLoadingPage />;
   }

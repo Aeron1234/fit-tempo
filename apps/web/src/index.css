@@ -765,3 +765,48 @@
   .tempo-overlay { box-shadow: var(--overlay-shadow); }
 }
 
+
+@layer components {
+  .landing {
+    width: min(100%, 72rem);
+    margin-inline: auto;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+      max(2rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+  .landing-brand { display: flex; align-items: center; gap: .75rem; font-weight: 750; }
+  .landing h1 { max-width: 17ch; font-size: clamp(2.25rem, 6vw, 5rem); line-height: 1.05; font-weight: 800; }
+  .landing h2, .connection-overlay h2 { font-size: 1.5rem; font-weight: 750; }
+  .landing h3 { font-size: 1.125rem; font-weight: 750; }
+  .landing-hero > p { max-width: 53ch; }
+  .landing-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: start; }
+  .landing-primary, .landing-secondary {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+    padding: .55rem 1rem; border-radius: .65rem; font-weight: 700; border: 1px solid var(--control-border);
+  }
+  .landing-primary { background: var(--primary); color: var(--primary-foreground); cursor: pointer; }
+  .landing-primary:hover { background: var(--primary-hover); }
+  .landing-primary:disabled { opacity: .7; cursor: wait; }
+  .landing-secondary { background: var(--card); color: var(--foreground); }
+  .landing-install-help { max-width: 38ch; margin-top: .75rem; }
+  .landing-grid { display: grid; }
+  .landing-card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1rem; min-width: 0; }
+  .connection-overlay {
+    position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0;
+    display: grid; align-items: safe center; justify-items: center; overflow: auto;
+    background: var(--background); color: var(--foreground);
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+      max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
+  .connection-overlay:not([open]) { display: none; }
+  .connection-overlay > div { width: min(100%, 28rem); display: grid; gap: 1rem; }
+  .connection-overlay button { justify-self: start; }
+}
+
+@media (display-mode: standalone) {
+  body {
+    padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+  }
+  .tempo-mobile-nav {
+    padding-inline: env(safe-area-inset-left, 0px) env(safe-area-inset-right, 0px);
+  }
+}

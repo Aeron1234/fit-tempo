@@ -41,3 +41,7 @@ For local sample testing, use the synthetic-demo configuration from Phase 19 wit
 | Email limits and delivery | Record the staging provider's active plan, template capacity, remaining quota, and sender limits. Verify Redis pacing/limits separately from EmailJS acceptance. For an explicitly authorized inbox, record acceptance of an account email and observed inbox receipt separately. Scheduled email requires its own authorized test recipient and two additional distinct templates under app validation, which can exceed the available plan. Leave it inactive and record that blocker if those resources are unavailable. |
 
 The API config registers `0 0 * * *` for the direct API Cron path. On Hobby, verify the daily window from the provider rather than assuming exact-minute execution. Confirm the project has legacy Cron enabled and observe the execution in Vercel logs. No bearer, session cookie, database URL, verification link or signed object URL belongs in the verification record. [Vercel Cron schedule limits](https://vercel.com/docs/schedules/cron-jobs/usage-and-pricing) · [Managing Vercel Cron Jobs](https://vercel.com/docs/schedules/cron-jobs/manage-cron-jobs)
+
+## Installable frontend
+
+Deploy the PWA assets with the web project. Preserve the API rewrite before SPA fallback and validate /manifest.webmanifest, /fit-tempo-sw.js and icon URLs on the staging HTTPS origin. See [PWA release](PWA_RELEASE.md) for staged checks and update verification. Production requires its own API target and verification.
